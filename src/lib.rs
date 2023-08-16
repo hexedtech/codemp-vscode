@@ -3,12 +3,10 @@ use std::sync::Arc;
 use neon::prelude::*;
 use once_cell::sync::OnceCell;
 use codemp::{
-	cursor::controller::{CursorSubscriber, CursorControllerHandle},
-	buffer::{
-		controller::{OperationControllerHandle, OperationControllerSubscriber},
-		client::CodempClient,
-		factory::OperationFactory,
-	},
+	controller::cursor::{CursorSubscriber, CursorControllerHandle},
+	controller::buffer::{OperationControllerHandle, OperationControllerSubscriber},
+	client::CodempClient,
+	factory::OperationFactory,
 	proto::buffer_client::BufferClient, 
 };
 use codemp::tokio::{runtime::Runtime, sync::Mutex};
@@ -79,7 +77,7 @@ fn create_client(mut cx: FunctionContext) -> JsResult<JsPromise> {
 	let channel = cx.channel();
 
 	runtime(&mut cx)?.spawn(async move {
-		match rc.lock().await.create(&path, content.as_deref()).await {
+		match rc.lock().await.create(path, content).await {
 			Ok(accepted) => deferred.settle_with(&channel, move |mut cx| Ok(cx.boolean(accepted))),
 			Err(e) => deferred.settle_with(&channel, move |mut cx| cx.throw_error::<String, neon::handle::Handle<JsString>>(e.to_string())),
 		}
@@ -127,7 +125,7 @@ fn attach_client(mut cx: FunctionContext) -> JsResult<JsPromise> {
 	let channel = cx.channel();
 
 	runtime(&mut cx)?.spawn(async move {
-		match rc.lock().await.attach(&path).await {
+		match rc.lock().await.attach(path).await {
 			Ok(controller) => {
 				deferred.settle_with(&channel, move |mut cx| {
 					let obj = cx.empty_object();
@@ -187,7 +185,7 @@ fn callback_operation(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let boxed : Handle<JsBox<OperationControllerJs>> = this.get(&mut cx, "boxed")?;
 	let callback = Arc::new(cx.argument::<JsFunction>(0)?.root(&mut cx));
 
-	let rc = boxed.0.clone();
+	let mut rc = boxed.0.clone();
 	let channel = cx.channel();
 
 	// TODO when garbage collecting OperationController stop this worker
@@ -217,7 +215,7 @@ fn callback_cursor(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let boxed : Handle<JsBox<CursorEventsHandle>> = this.get(&mut cx, "boxed")?;
 	let callback = Arc::new(cx.argument::<JsFunction>(0)?.root(&mut cx));
 
-	let rc = boxed.0.clone();
+	let mut rc = boxed.0.clone();
 	let channel = cx.channel();
 
 	// TODO when garbage collecting OperationController stop this worker
