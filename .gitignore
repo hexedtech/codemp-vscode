@@ -7,3 +7,5 @@ Cargo.lock
 /client/vscode/*.vsix
 /client/vscode/codemp.node
 
+node_modules
+
