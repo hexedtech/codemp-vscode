@@ -21,8 +21,8 @@ impl From::<JsCodempError> for napi::Error {
 }
 
 #[napi]
-pub fn connect(addr: String) -> napi::Result<()> {
-	CODEMP_INSTANCE.connect(&addr)
+pub async fn connect(addr: String) -> napi::Result<()> {
+	CODEMP_INSTANCE.connect(&addr).await
 		.map_err(|e| JsCodempError(e).into())
 }
 
@@ -31,8 +31,8 @@ pub fn connect(addr: String) -> napi::Result<()> {
 /// CURSOR
 
 #[napi]
-pub fn join(session: String) -> napi::Result<JsCursorController> {
-	let controller = CODEMP_INSTANCE.join(&session)
+pub async fn join(session: String) -> napi::Result<JsCursorController> {
+	let controller = CODEMP_INSTANCE.join(&session).await
 		.map_err(|e| napi::Error::from(JsCodempError(e)))?;
 	Ok(controller.into())
 }
@@ -59,9 +59,9 @@ impl JsCursorController {
 	}
 
 	#[napi]
-	pub async fn send(&self, buffer: String, start: (i32, i32), end: (i32, i32)) -> napi::Result<()> {
+	pub fn send(&self, buffer: String, start: (i32, i32), end: (i32, i32)) -> napi::Result<()> {
 		let pos = CodempCursorPosition { buffer, start: Some(RowCol::from(start)), end: Some(RowCol::from(end)) };
-		self.0.send(pos).await
+		self.0.send(pos)
 				.map_err(|e| napi::Error::from(JsCodempError(e)))
 	}
 }
@@ -124,6 +124,15 @@ impl From::<CodempTextChange> for JsTextChange {
 	}
 }
 
+impl From::<OperationSeq> for JsCodempOperationSeq{
+	fn from(value: OperationSeq) -> Self {
+		JsCodempOperationSeq(value)
+	}
+
+
+}
+
+
 impl From::<Arc<CodempBufferController>> for JsBufferController {
 	fn from(value: Arc<CodempBufferController>) -> Self {
 		JsBufferController(value)
@@ -134,9 +143,21 @@ impl From::<Arc<CodempBufferController>> for JsBufferController {
 #[napi]
 pub struct JsBufferController(Arc<CodempBufferController>);
 
+#[napi(js_name = "CodempOperationSeq")]
+pub struct JsCodempOperationSeq(CodempOperationSeq);
+
+
+
 
 #[napi]
 impl JsBufferController {
+
+	#[napi]
+	pub fn delta(&self, start: i64, txt: String, end: i64) -> Option<JsCodempOperationSeq> {
+		self.0.delta(start as usize, &txt, end as usize).map(|x| x.into())
+	}
+
+
 
 	#[napi]
 	pub async fn recv(&self) -> napi::Result<JsTextChange> {
@@ -147,9 +168,10 @@ impl JsBufferController {
 		)
 	}
 
-	//#[napi]
-	pub async fn send(&self, op: OperationSeq) -> napi::Result<()> {
-		self.0.send(op).await
+	#[napi]
+	pub fn send(&self, op: &JsCodempOperationSeq) -> napi::Result<()> {
+		// TODO might be nice to take ownership of the opseq
+		self.0.send(op.0.clone())
 				.map_err(|e| napi::Error::from(JsCodempError(e)))
 	}
 
@@ -157,15 +179,15 @@ impl JsBufferController {
 }
 
 #[napi]
-pub fn create(path: String, content: Option<String>) -> napi::Result<()> {
-	CODEMP_INSTANCE.create(&path, content.as_deref())
+pub async fn create(path: String, content: Option<String>) -> napi::Result<()> {
+	CODEMP_INSTANCE.create(&path, content.as_deref()).await
 		.map_err(|e| napi::Error::from(JsCodempError(e)))
 }
 
 #[napi]
-pub fn attach(path: String) -> napi::Result<JsBufferController> {
+pub async fn attach(path: String) -> napi::Result<JsBufferController> {
 	Ok(
-		CODEMP_INSTANCE.attach(&path)
+		CODEMP_INSTANCE.attach(&path).await
 			.map_err(|e| napi::Error::from(JsCodempError(e)))?
 			.into()
 	)
