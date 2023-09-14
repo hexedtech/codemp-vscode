@@ -29,7 +29,7 @@ impl From::<JsCodempError> for napi::Error {
 
 #[napi]
 pub async fn connect(addr: String) -> napi::Result<()> {
-	let f = std::fs::File::create("/home/***REMOVED***/projects/codemp/mine/vscode/log.txt").unwrap();
+	let f = std::fs::File::create("/home/***REMOVED***/projects/codemp/mine/vscode/***REMOVED***.txt").unwrap();
 	tracing_subscriber::fmt()
 		.with_ansi(false)
 		.with_max_level(tracing::Level::INFO)
@@ -81,9 +81,7 @@ impl JsCursorController {
 		tokio::spawn(async move {
 			loop {
 				let event = _controller.recv().await.expect("could not receive cursor event!");
-				tracing::info!("printing '{:?}' event", event); // works?
 				tsfn.call(event.clone(), ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
-				tracing::info!("printing '{:?}' event after tsfn", event); // works?
 			}
 		});
 		Ok(())

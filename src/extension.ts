@@ -1,23 +1,8 @@
-/*
-
-
-vscode
-+ src
-  + glue.rs
-  + extension.ts
-+ Cargo.toml
-+ package.json
-
-
-*/
-
-
-
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 //import * as codempp from '/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node';
-const codemp = require("/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node");
+const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/index.node");
 // import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
 
 // This method is called when your extension is activated

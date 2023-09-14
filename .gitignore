@@ -1,11 +1,13 @@
-/target
+.vscode
+.vscodeignore
 
-Cargo.lock
-
-# vscode extension build files
-/client/vscode/node_modules/
-/client/vscode/*.vsix
-/client/vscode/codemp.node
 
 node_modules
+package-lock.json
 
+target
+Cargo.lock
+codemp.node
+index.d.ts
+index.node
+out
