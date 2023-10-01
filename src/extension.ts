@@ -27,9 +27,11 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	let connectCommand = vscode.commands.registerCommand('codempvscode.connect', connect);
 	let joinCommand = vscode.commands.registerCommand('codempvscode.join', join);
+	let attachCommand = vscode.commands.registerCommand('codempvscode.attach', attach);
 	let createBufferCommand = vscode.commands.registerCommand('codempvscode.createBuffer', createBuffer);
 	context.subscriptions.push(connectCommand);
 	context.subscriptions.push(joinCommand);
+	context.subscriptions.push(attachCommand);
 	context.subscriptions.push(createBufferCommand);
 	context.subscriptions.push(disposable);
 
@@ -127,6 +129,25 @@ async function createBuffer(){
 
 
 
+
+async function attach() {
+	let workspace="test";
+	let buffer = await codemp.attach(workspace);
+
+	let editor = vscode.window.activeTextEditor;
+
+	if (editor === undefined) { return } // TODO say something!!!!!!
+
+	let range = new vscode.Range(
+		editor.document.positionAt(0),
+		editor.document.positionAt(editor.document.getText().length)
+	)
+	await editor.edit(editBuilder => editBuilder.replace(range, buffer.content()))
+
+	console.log("Buffer = ", buffer, "\n");
+	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
+
+}
 
 
 

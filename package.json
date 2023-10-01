@@ -28,6 +28,10 @@
         "title": "create a codemp buffer"
       },
       {
+        "command": "codempvscode.attach",
+        "title": "attach to a codemp workspace"
+      },
+      {
         "command": "codempvscode.helloWorld",
         "title": "Hello World (debug)"
       }
