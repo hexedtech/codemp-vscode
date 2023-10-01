@@ -27,8 +27,10 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	let connectCommand = vscode.commands.registerCommand('codempvscode.connect', connect);
 	let joinCommand = vscode.commands.registerCommand('codempvscode.join', join);
+	let createBufferCommand = vscode.commands.registerCommand('codempvscode.createBuffer', createBuffer);
 	context.subscriptions.push(connectCommand);
 	context.subscriptions.push(joinCommand);
+	context.subscriptions.push(createBufferCommand);
 	context.subscriptions.push(disposable);
 
 }
@@ -114,9 +116,13 @@ async function join() {
 }
 
 
-
-
-
+async function createBuffer(){
+	let buffer : string = (await vscode.window.showInputBox({prompt: "path of the buffer to create"}))!;
+	console.log("new buffer created ", buffer, "\n");
+	codemp.create(buffer);
+	console.log("new createdBuffer ", createBuffer, "\n");
+	//TODO push all the current opened file onto the buffer
+}
 
 
 

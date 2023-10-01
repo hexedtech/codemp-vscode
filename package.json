@@ -24,6 +24,10 @@
         "title": "Join a codemp workspace"
       },
       {
+        "command": "codempvscode.createBuffer",
+        "title": "create a codemp buffer"
+      },
+      {
         "command": "codempvscode.helloWorld",
         "title": "Hello World (debug)"
       }
