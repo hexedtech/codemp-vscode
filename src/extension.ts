@@ -147,6 +147,18 @@ async function attach() {
 	console.log("Buffer = ", buffer, "\n");
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
 
+	console.log("kiao");
+
+	buffer.callback((event:any) =>{
+		CACHE = `${event.span.start}${event.content}${event.span.end}`; //what's the difference between e.text and e.content like it's on lib.rs?
+
+		if (editor === undefined) { return } // TODO say something!!!!!!
+		let range = new vscode.Range(
+			editor.document.positionAt(event.span.start),
+			editor.document.positionAt(event.span.end)
+		)
+		editor.edit(editBuilder => editBuilder.replace(range, event.content))
+	});
 }
 
 
