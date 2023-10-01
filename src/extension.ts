@@ -1,9 +1,13 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-//import * as codempp from '/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node';
-const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/index.node");
-// import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
+//import * as types from 'index';
+//import * as codemp from '..';
+//import * as codemp from '/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node';
+const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node");
+
+var CACHE : string = "";
+//import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -35,54 +39,92 @@ async function connect() {
 	if (host === undefined) return  // user cancelled with ESC
 	if (host.length == 0) host = "http://alemi.dev:50051"
 	await codemp.connect(host);
-	vscode.window.showInformationMessage(`Connected to codemp ***REMOVED*** @[${host}]`);
+	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);
 }
 
 
 async function join() {
-	let workspace = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"})
-	let buffer = await vscode.window.showInputBox({prompt: "buffer name for the file needed to update other clients cursors"})
+	let workspace = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"});
+	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file needed to update other clients cursors"}))!;
+	let editor = vscode.window.activeTextEditor;
+	//let editor = activeEditor.document.getText();
+	//let doc = editor?.document;
 	if (workspace === undefined) return  // user cancelled with ESC
 	if (workspace.length == 0) workspace = "default"
 
 	if (buffer === undefined) return  // user cancelled with ESC
-	if (buffer.length == 0) workspace = "test"
-
-
-
+	if (buffer.length == 0) {workspace = "test"; buffer="test"; }
+	
 	let controller = await codemp.join(workspace)
-	controller.callback((event:any) => {
-		console.log(event);
+	try{
+	controller.callback(( event:any) => {
+		try{
+		//console.log(event);
+		let curPos  = vscode.window.activeTextEditor?.selection.active;
+		let PosNumber = curPos?.line as number;
+		let posizione = new vscode.Position(0, PosNumber);
+		//console.log("posizione", posizione, "\n");
+		let range_start = new vscode.Position(event.start.row , event.start.col); // -1?
+		let range_end = new vscode.Position(event.end.row, event.end.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
+		/*console.log("range_start" ,range_start, "\n");
+		console.log("range_end" ,range_end, "\n");*/
+		const decorationRange = new vscode.Range(range_start, range_end);
+		const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+			borderWidth: '5px',
+			borderStyle: 'solid',
+			overviewRulerColor: 'blue',
+			overviewRulerLane: vscode.OverviewRulerLane.Right,
+			light: {
+				// this color will be used in light color themes
+				borderColor: 'darkblue'
+			},
+			dark: {
+				// this color will be used in dark color themes
+				borderColor: 'lightblue'
+			}
+		});
+		//let DECORATION = vscode.window.createTextEditorDecorationType({backgroundColor: 'red', color: 'white'});
+		/*console.log("Editor" ,editor, "\n");
+		console.log("Decoration range " , [decorationRange], "\n");*/
+		editor?.setDecorations(smallNumberDecorationType, [decorationRange]);
+	}catch(e){
+		console.log("Error", e, "\n");
+	}
 	});
+}catch(e){
+	console.log("Error", e, "\n");
+}
 
 
 	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent)=>{
-		if(event.kind==1 || event.kind ==2){
+		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri.toString()
 		let selection = event.selections[0] // TODO there may be more than one cursor!!
 		//let anchor = [selection.anchor.line+1, selection.anchor.character]
 		//let position = [selection.active.line+1, selection.active.character+1]
-		let anchor = [selection.anchor.line, selection.anchor.character]
-		let position = [selection.active.line, selection.active.character+1]
-		console.log("Buffer from selection" + buffer+"\n");
+		let anchor : [number, number] = [selection.anchor.line, selection.anchor.character];
+		let position : [number, number] = [selection.active.line, selection.active.character+1];
+		/*console.log("Buffer from selection" + buffer+"\n");
 		console.log("selection " + selection+"\n");
 		console.log("Anchor selection" + anchor+"\n");
-		console.log("position selection" + position+"\n");
+		console.log("position selection" + position+"\n");*/
 		controller.send(buffer, anchor, position);
-		}
 	});
 	vscode.window.showInformationMessage(`Connected to workspace @[${workspace}]`);
 }
 
 
 
-/*async function attach() {
-	let workspace = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"})
-	if (workspace === undefined) return  // user cancelled with ESC
-	if (workspace.length == 0) workspace = "default"
-	await codemp.attach(workspace);
-	vscode.window.showInformationMessage(`Connected to codemp ***REMOVED*** @[${workspace}]`);
-}*/
+
+
+
+
+
+
+
+
+
+
 
 
 // This method is called when your extension is deactivated

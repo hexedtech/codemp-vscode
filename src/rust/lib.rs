@@ -1,21 +1,15 @@
 #![deny(clippy::all)]
-
 use std::sync::Arc;
-use futures::prelude::*;
 use codemp::{
 	prelude::*,
 	proto::{RowCol, CursorEvent},
 	buffer::factory::OperationFactory, ot::OperationSeq
 };
 use napi_derive::napi;
-use napi::{CallContext, Status, threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode, ErrorStrategy::{CalleeHandled, Fatal}, ThreadsafeFunction}};
-use napi::tokio::{self, fs};
-
+use napi::{Status, threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode, ErrorStrategy::Fatal, ThreadsafeFunction}, JsBoolean};
+use napi::tokio;
 #[derive(Debug)]
 struct JsCodempError(CodempError);
-
-
-
 
 
 
@@ -27,9 +21,10 @@ impl From::<JsCodempError> for napi::Error {
 	}
 }
 
+
 #[napi]
 pub async fn connect(addr: String) -> napi::Result<()> {
-	let f = std::fs::File::create("/home/***REMOVED***/projects/codemp/mine/vscode/***REMOVED***.txt").unwrap();
+	let f = std::fs::File::create("/home/***REMOVED***/projects/codemp/mine/codempvscode/***REMOVED***.txt").unwrap();
 	tracing_subscriber::fmt()
 		.with_ansi(false)
 		.with_max_level(tracing::Level::INFO)
@@ -157,11 +152,11 @@ impl From::<RowCol> for JsRowCol {
 /// BUFFER
 #[napi(object)]
 pub struct JsTextChange {
-	pub span: JSRange,
+	pub span: JsRange,
 	pub content: String,
 }
 #[napi(object)]
-pub struct JSRange{
+pub struct JsRange{
 	pub start: i32,
 	pub end: Option<i32>,
 }
@@ -170,7 +165,7 @@ impl From::<CodempTextChange> for JsTextChange {
 	fn from(value: CodempTextChange) -> Self {
 		JsTextChange {
 			// TODO how is x.. represented ? span.end can never be None
-			span: JSRange { start: value.span.start as i32, end: Some(value.span.end as i32) },
+			span: JsRange { start: value.span.start as i32, end: Some(value.span.end as i32) },
 			content: value.content,
 		}
 	}
@@ -197,14 +192,42 @@ pub struct JsBufferController(Arc<CodempBufferController>);
 pub struct JsCodempOperationSeq(CodempOperationSeq);
 
 
+/*#[napi]
+pub fn delta(string : String, start: i64, txt: String, end: i64 ) -> Option<JsCodempOperationSeq> {
+	Some(JsCodempOperationSeq(string.diff(start as usize, &txt, end as usize)?))
+}*/
 
 
 #[napi]
 impl JsBufferController {
 
+
+	#[napi]
+	pub fn content(&self) -> String{
+		self.0.content()
+	}
+
 	#[napi]
 	pub fn delta(&self, start: i64, txt: String, end: i64) -> Option<JsCodempOperationSeq> {
 		self.0.delta(start as usize, &txt, end as usize).map(|x| x.into())
+	}
+
+	#[napi(ts_args_type = "fun: (event: JsTextChange) => void")]
+	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ //TODO it sucks but v0.5 will improve it!!!
+		let tsfn : ThreadsafeFunction<CodempTextChange, Fatal> = 
+		fun.create_threadsafe_function(0,
+			|ctx : ThreadSafeCallContext<CodempTextChange>| {
+				Ok(vec![JsTextChange::from(ctx.value)])
+			}
+		)?;
+		let _controller = self.0.clone();
+		tokio::spawn(async move {
+			loop {
+				let event = _controller.recv().await.expect("could not receive buffer event!");
+				tsfn.call(event, ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+			}
+		});
+		Ok(())
 	}
 
 	#[napi]
@@ -238,3 +261,4 @@ pub async fn attach(path: String) -> napi::Result<JsBufferController> {
 			.into()
 	)
 }
+
