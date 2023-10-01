@@ -43,7 +43,7 @@ async function connect() {
 	if (host === undefined) return  // user cancelled with ESC
 	if (host.length == 0) host = "http://alemi.dev:50051"
 	await codemp.connect(host);
-	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);
+	vscode.window.showInformationMessage(`Connected to codemp  @[${host}]`);
 }
 
 
@@ -148,6 +148,16 @@ async function attach() {
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
 
 	console.log("kiao");
+
+	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) =>{
+		console.log(event.reason);
+		for (let change of event.contentChanges) {
+			if (`${change.rangeOffset}${change.text}${change.rangeOffset+change.rangeLength}` === CACHE) continue; 
+			let op = buffer.delta(change.rangeOffset,change.text,change.rangeOffset+change.rangeLength)
+			if (op != null) { buffer.send(op) }
+			else { console.log("change is empty") }
+		}
+	});
 
 	buffer.callback((event:any) =>{
 		CACHE = `${event.span.start}${event.content}${event.span.end}`; //what's the difference between e.text and e.content like it's on lib.rs?
