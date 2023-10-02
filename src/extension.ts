@@ -29,10 +29,12 @@ export function activate(context: vscode.ExtensionContext) {
 	let joinCommand = vscode.commands.registerCommand('codempvscode.join', join);
 	let attachCommand = vscode.commands.registerCommand('codempvscode.attach', attach);
 	let createBufferCommand = vscode.commands.registerCommand('codempvscode.createBuffer', createBuffer);
+	let disconnectBufferCommand = vscode.commands.registerCommand('codempvscode.disconnectBuffer', disconnectBuffer);
 	context.subscriptions.push(connectCommand);
 	context.subscriptions.push(joinCommand);
 	context.subscriptions.push(attachCommand);
 	context.subscriptions.push(createBufferCommand);
+	context.subscriptions.push(disconnectBufferCommand)
 	context.subscriptions.push(disposable);
 
 }
@@ -43,7 +45,7 @@ async function connect() {
 	if (host === undefined) return  // user cancelled with ESC
 	if (host.length == 0) host = "http://alemi.dev:50051"
 	await codemp.connect(host);
-	vscode.window.showInformationMessage(`Connected to codemp  @[${host}]`);
+	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);
 }
 
 
@@ -73,18 +75,18 @@ async function join() {
 		/*console.log("range_start" ,range_start, "\n");
 		console.log("range_end" ,range_end, "\n");*/
 		const decorationRange = new vscode.Range(range_start, range_end);
-		const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+		const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ //should remove the highlighted text after a while 
 			borderWidth: '5px',
 			borderStyle: 'solid',
-			overviewRulerColor: 'blue',
+			overviewRulerColor: 'blue', 
 			overviewRulerLane: vscode.OverviewRulerLane.Right,
 			light: {
 				// this color will be used in light color themes
-				borderColor: 'darkblue'
+				borderColor: 'darkblue' //should create this color based on event.user (uuid)
 			},
 			dark: {
 				// this color will be used in dark color themes
-				borderColor: 'lightblue'
+				borderColor: 'lightblue' //should create this color based on event.user (uuid)
 			}
 		});
 		//let DECORATION = vscode.window.createTextEditorDecorationType({backgroundColor: 'red', color: 'white'});
@@ -119,11 +121,22 @@ async function join() {
 
 
 async function createBuffer(){
-	let buffer : string = (await vscode.window.showInputBox({prompt: "path of the buffer to create"}))!;
+	let workspace="test";//ask which workspace
+	let buffer : any = (await vscode.window.showInputBox({prompt: "path of the buffer to create"}))!;
 	console.log("new buffer created ", buffer, "\n");
 	codemp.create(buffer);
 	console.log("new createdBuffer ", createBuffer, "\n");
-	//TODO push all the current opened file onto the buffer
+	let editor = vscode.window.activeTextEditor;
+
+	if (editor === undefined) { return } // TODO say something!!!!!!
+
+	let range = new vscode.Range(
+		editor.document.positionAt(0),
+		editor.document.positionAt(editor.document.getText().length)
+	)
+	buffer = await codemp.attach(workspace);
+	buffer.delta(range.start,editor.document.getText(),range.end); //test it plz coded this at 10am :(
+	//Should i disconnect or stay attached to buffer???
 }
 
 
@@ -147,8 +160,6 @@ async function attach() {
 	console.log("Buffer = ", buffer, "\n");
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
 
-	console.log("kiao");
-
 	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) =>{
 		console.log(event.reason);
 		for (let change of event.contentChanges) {
@@ -171,10 +182,18 @@ async function attach() {
 	});
 }
 
+async function disconnectBuffer(){
+	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
+	codemp.disconnect(buffer);
+	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
+}
+
 
 
 
 
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+//Maybe i should disconnect from every workspace and buffer ??? // TODO
+}

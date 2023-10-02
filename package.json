@@ -32,6 +32,10 @@
         "title": "attach to a codemp workspace"
       },
       {
+        "command": "codempvscode.disconnectBuffer",
+        "title": "disconnect from a codemp Buffer"
+      },
+      {
         "command": "codempvscode.helloWorld",
         "title": "Hello World (debug)"
       }

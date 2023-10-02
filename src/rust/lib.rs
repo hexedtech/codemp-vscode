@@ -35,6 +35,17 @@ pub async fn connect(addr: String) -> napi::Result<()> {
 }
 
 
+#[napi]
+pub async fn leave_workspace() -> Result<(), napi::Error> {
+	CODEMP_INSTANCE.leave_workspace().await.map_err(|e| napi::Error::from(JsCodempError(e)))
+}
+
+#[napi]
+pub async fn disconnect_buffer(path: String) -> Result<bool, napi::Error> {
+	CODEMP_INSTANCE.disconnect_buffer(&path).await.map_err(|e| napi::Error::from(JsCodempError(e)))
+}
+
+
 
 /// CURSOR
 
@@ -197,9 +208,11 @@ pub fn delta(string : String, start: i64, txt: String, end: i64 ) -> Option<JsCo
 	Some(JsCodempOperationSeq(string.diff(start as usize, &txt, end as usize)?))
 }*/
 
-
 #[napi]
 impl JsBufferController {
+
+
+	
 
 
 	#[napi]
@@ -261,4 +274,3 @@ pub async fn attach(path: String) -> napi::Result<JsBufferController> {
 			.into()
 	)
 }
-
