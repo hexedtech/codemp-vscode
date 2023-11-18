@@ -1,12 +1,14 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { JsTextChange } from '..';
 //import * as types from 'index';
 //import * as codemp from '..';
 //import * as codemp from '/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node';
 const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node");
 
 var CACHE : string = "";
+let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
 //import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
 
 // This method is called when your extension is activated
@@ -41,9 +43,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 
 async function connect() {
-	let host = await vscode.window.showInputBox({prompt: "server host (default to http://alemi.dev:50051)"})
+	let host = await vscode.window.showInputBox({prompt: "server host (default to http://alemi.dev:50052)"})
 	if (host === undefined) return  // user cancelled with ESC
-	if (host.length == 0) host = "http://alemi.dev:50051"
+	if (host.length == 0) host = "http://alemi.dev:50052"
 	await codemp.connect(host);
 	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);
 }
@@ -75,7 +77,8 @@ async function join() {
 		/*console.log("range_start" ,range_start, "\n");
 		console.log("range_end" ,range_end, "\n");*/
 		const decorationRange = new vscode.Range(range_start, range_end);
-		const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ //should remove the highlighted text after a while 
+		smallNumberDecorationType.dispose();
+		smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ //should remove the highlighted text after a while 
 			borderWidth: '5px',
 			borderStyle: 'solid',
 			overviewRulerColor: 'blue', 
@@ -102,7 +105,7 @@ async function join() {
 }
 
 
-	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent)=>{
+	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri.toString()
 		let selection = event.selections[0] // TODO there may be more than one cursor!!
@@ -120,7 +123,7 @@ async function join() {
 }
 
 
-async function createBuffer(){
+async function createBuffer() {
 	let workspace="test";//ask which workspace
 	let buffer : any = (await vscode.window.showInputBox({prompt: "path of the buffer to create"}))!;
 	console.log("new buffer created ", buffer, "\n");
@@ -151,26 +154,27 @@ async function attach() {
 
 	if (editor === undefined) { return } // TODO say something!!!!!!
 
-	let range = new vscode.Range(
-		editor.document.positionAt(0),
-		editor.document.positionAt(editor.document.getText().length)
-	)
-	await editor.edit(editBuilder => editBuilder.replace(range, buffer.content()))
-
 	console.log("Buffer = ", buffer, "\n");
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
 
-	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) =>{
+	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) => {
 		console.log(event.reason);
 		for (let change of event.contentChanges) {
-			if (`${change.rangeOffset}${change.text}${change.rangeOffset+change.rangeLength}` === CACHE) continue; 
-			let op = buffer.delta(change.rangeOffset,change.text,change.rangeOffset+change.rangeLength)
-			if (op != null) { buffer.send(op) }
-			else { console.log("change is empty") }
+			if (`${change.rangeOffset}${change.text}${change.rangeOffset+change.rangeLength}` === CACHE) continue; // LMAO
+			buffer.send({
+				span: { 
+					start: change.rangeOffset,
+					end: change.rangeOffset+change.rangeLength
+				},
+				content: change.text
+			});
 		}
 	});
+	
+	//await new Promise((resolve) => setTimeout(resolve, 200)); // tonioware
+	console.log("test");
 
-	buffer.callback((event:any) =>{
+	buffer.callback((event: any) => {
 		CACHE = `${event.span.start}${event.content}${event.span.end}`; //what's the difference between e.text and e.content like it's on lib.rs?
 
 		if (editor === undefined) { return } // TODO say something!!!!!!
@@ -182,7 +186,7 @@ async function attach() {
 	});
 }
 
-async function disconnectBuffer(){
+async function disconnectBuffer() {
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
 	codemp.disconnect(buffer);
 	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
@@ -197,3 +201,4 @@ async function disconnectBuffer(){
 export function deactivate() {
 //Maybe i should disconnect from every workspace and buffer ??? // TODO
 }
+

@@ -3,10 +3,9 @@ use std::sync::Arc;
 use codemp::{
 	prelude::*,
 	proto::{RowCol, CursorEvent},
-	buffer::factory::OperationFactory, ot::OperationSeq
 };
 use napi_derive::napi;
-use napi::{Status, threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode, ErrorStrategy::Fatal, ThreadsafeFunction}, JsBoolean};
+use napi::{Status, threadsafe_function::{ThreadSafeCallContext, ThreadsafeFunctionCallMode, ErrorStrategy::Fatal, ThreadsafeFunction}};
 use napi::tokio;
 #[derive(Debug)]
 struct JsCodempError(CodempError);
@@ -76,7 +75,7 @@ impl JsCursorController {
 	}*/
 
 	#[napi(ts_args_type = "fun: (event: JsCursorEvent) => void")]
-	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ //TODO it sucks but v0.5 will improve it!!!
+	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ 
 		let tsfn : ThreadsafeFunction<CodempCursorEvent, Fatal> = 
 		fun.create_threadsafe_function(0,
 			|ctx : ThreadSafeCallContext<CodempCursorEvent>| {
@@ -86,8 +85,13 @@ impl JsCursorController {
 		let _controller = self.0.clone();
 		tokio::spawn(async move {
 			loop {
-				let event = _controller.recv().await.expect("could not receive cursor event!");
-				tsfn.call(event.clone(), ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+				match _controller.recv().await {
+					Ok(event) => {
+						tsfn.call(event.clone(), ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+					},
+					Err(CodempError::Deadlocked) => continue,
+					Err(e) => break tracing::warn!("error receiving: {}", e),
+				}
 			}
 		});
 		Ok(())
@@ -169,22 +173,16 @@ pub struct JsTextChange {
 #[napi(object)]
 pub struct JsRange{
 	pub start: i32,
-	pub end: Option<i32>,
+	pub end: i32,
 }
 
 impl From::<CodempTextChange> for JsTextChange {
 	fn from(value: CodempTextChange) -> Self {
 		JsTextChange {
 			// TODO how is x.. represented ? span.end can never be None
-			span: JsRange { start: value.span.start as i32, end: Some(value.span.end as i32) },
+			span: JsRange { start: value.span.start as i32, end: value.span.end as i32 },
 			content: value.content,
 		}
-	}
-}
-
-impl From::<OperationSeq> for JsCodempOperationSeq{
-	fn from(value: OperationSeq) -> Self {
-		JsCodempOperationSeq(value)
 	}
 }
 
@@ -199,34 +197,23 @@ impl From::<Arc<CodempBufferController>> for JsBufferController {
 #[napi]
 pub struct JsBufferController(Arc<CodempBufferController>);
 
-#[napi(js_name = "CodempOperationSeq")]
-pub struct JsCodempOperationSeq(CodempOperationSeq);
-
 
 /*#[napi]
 pub fn delta(string : String, start: i64, txt: String, end: i64 ) -> Option<JsCodempOperationSeq> {
 	Some(JsCodempOperationSeq(string.diff(start as usize, &txt, end as usize)?))
 }*/
 
+
+
+
+
+
 #[napi]
 impl JsBufferController {
 
 
-	
-
-
-	#[napi]
-	pub fn content(&self) -> String{
-		self.0.content()
-	}
-
-	#[napi]
-	pub fn delta(&self, start: i64, txt: String, end: i64) -> Option<JsCodempOperationSeq> {
-		self.0.delta(start as usize, &txt, end as usize).map(|x| x.into())
-	}
-
 	#[napi(ts_args_type = "fun: (event: JsTextChange) => void")]
-	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ //TODO it sucks but v0.5 will improve it!!!
+	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ 
 		let tsfn : ThreadsafeFunction<CodempTextChange, Fatal> = 
 		fun.create_threadsafe_function(0,
 			|ctx : ThreadSafeCallContext<CodempTextChange>| {
@@ -235,13 +222,20 @@ impl JsBufferController {
 		)?;
 		let _controller = self.0.clone();
 		tokio::spawn(async move {
+			tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 			loop {
-				let event = _controller.recv().await.expect("could not receive buffer event!");
-				tsfn.call(event, ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+				match _controller.recv().await {
+					Ok(event) => {
+						tsfn.call(event.clone(), ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+					},
+					Err(CodempError::Deadlocked) => continue,
+					Err(e) => break tracing::warn!("error receiving: {}", e),
+				}
 			}
 		});
 		Ok(())
 	}
+
 
 	#[napi]
 	pub async fn recv(&self) -> napi::Result<JsTextChange> {
@@ -253,9 +247,13 @@ impl JsBufferController {
 	}
 
 	#[napi]
-	pub fn send(&self, op: &JsCodempOperationSeq) -> napi::Result<()> {
+	pub fn send(&self, op: JsTextChange) -> napi::Result<()> {
 		// TODO might be nice to take ownership of the opseq
-		self.0.send(op.0.clone())
+		let new_text_change = CodempTextChange {
+			span: op.span.start as usize .. op.span.end as usize,
+			content: op.content,
+		};
+		self.0.send(new_text_change)
 				.map_err(|e| napi::Error::from(JsCodempError(e)))
 	}
 }
