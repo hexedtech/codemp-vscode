@@ -33,6 +33,13 @@ pub async fn connect(addr: String) -> napi::Result<()> {
 		.map_err(|e| JsCodempError(e).into())
 }
 
+#[napi]
+pub async fn get_buffer(path: String) ->  Option<JsBufferController> {
+	let x = CODEMP_INSTANCE.get_buffer(&path)
+		.await
+		.ok()?;
+	Some(JsBufferController(x))
+}
 
 #[napi]
 pub async fn leave_workspace() -> Result<(), napi::Error> {
@@ -235,6 +242,14 @@ impl JsBufferController {
 		});
 		Ok(())
 	}
+
+
+	#[napi]
+	pub fn content(&self) -> napi::Result<String> {
+		Ok(self.0.content())
+	}
+
+
 
 
 	#[napi]

@@ -36,6 +36,10 @@
         "title": "disconnect from a codemp Buffer"
       },
       {
+        "command": "codempvscode.sync",
+        "title": "Sync the current buffer"
+      },
+      {
         "command": "codempvscode.helloWorld",
         "title": "Hello World (debug)"
       }

@@ -8,6 +8,7 @@ import { JsTextChange } from '..';
 const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node");
 
 var CACHE : string = "";
+var BUFFERS : any = [];
 let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
 //import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
 
@@ -32,12 +33,15 @@ export function activate(context: vscode.ExtensionContext) {
 	let attachCommand = vscode.commands.registerCommand('codempvscode.attach', attach);
 	let createBufferCommand = vscode.commands.registerCommand('codempvscode.createBuffer', createBuffer);
 	let disconnectBufferCommand = vscode.commands.registerCommand('codempvscode.disconnectBuffer', disconnectBuffer);
+	let syncBufferCommand = vscode.commands.registerCommand('codempvscode.sync', sync);
 	context.subscriptions.push(connectCommand);
 	context.subscriptions.push(joinCommand);
 	context.subscriptions.push(attachCommand);
 	context.subscriptions.push(createBufferCommand);
-	context.subscriptions.push(disconnectBufferCommand)
+	context.subscriptions.push(disconnectBufferCommand);
+	context.subscriptions.push(syncBufferCommand);
 	context.subscriptions.push(disposable);
+
 
 }
 
@@ -61,7 +65,7 @@ async function join() {
 	if (workspace.length == 0) workspace = "default"
 
 	if (buffer === undefined) return  // user cancelled with ESC
-	if (buffer.length == 0) {workspace = "test"; buffer="test"; }
+	if (buffer.length == 0) {workspace = "default"; buffer="fucl"; }
 	
 	let controller = await codemp.join(workspace)
 	try{
@@ -147,18 +151,32 @@ async function createBuffer() {
 
 
 async function attach() {
-	let workspace="test";
-	let buffer = await codemp.attach(workspace);
+	let buffer_name : any = (await vscode.window.showInputBox({prompt: "buffer to attach to"}))!;
+	let buffer = await codemp.attach(buffer_name);
+	console.log("attached to buffer", buffer_name);
+	console.log("buffer", buffer);
 
 	let editor = vscode.window.activeTextEditor;
+	let fileUri = buffer_name;
+	const fileName = 'untitled-1';
+	const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: fileName });
+	await vscode.workspace.openTextDocument(newFileUri);
+	vscode.commands.executeCommand('vscode.open', newFileUri);
 
-	if (editor === undefined) { return } // TODO say something!!!!!!
-
+	if (editor === undefined) {
+		vscode.window.showInformationMessage(`Open a file first`);	
+		return;
+	}
+	editor = vscode.window.activeTextEditor!;
 	console.log("Buffer = ", buffer, "\n");
-	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${workspace}]`);
+	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
+
+	let file_uri = editor.document.uri;
+	BUFFERS.push([file_uri, buffer_name]);
 
 	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) => {
 		console.log(event.reason);
+		if (event.document.uri != file_uri) return; // ?
 		for (let change of event.contentChanges) {
 			if (`${change.rangeOffset}${change.text}${change.rangeOffset+change.rangeLength}` === CACHE) continue; // LMAO
 			buffer.send({
@@ -190,6 +208,30 @@ async function disconnectBuffer() {
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
 	codemp.disconnect(buffer);
 	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
+}
+
+function sync() {
+	let editor = vscode.window.activeTextEditor;
+	if (editor === undefined) { return }
+	for (let tuple of BUFFERS) {
+		if (tuple[0] == editor?.document.uri) {
+
+			let buffer = codemp.getBuffer(tuple[1]);
+			if (buffer==null) {
+				vscode.window.showErrorMessage("This buffer does not exist anymore");
+				return;
+			}
+			let range = new vscode.Range(
+				editor.document.positionAt(0),
+				editor.document.positionAt(editor.document.getText().length)
+			)
+			let content = buffer.content()
+			CACHE = `${range.start}${content}${range.end}`;
+			editor.edit(editBuilder => editBuilder.replace(range, content))
+			return;
+		}
+	}
+	vscode.window.showErrorMessage("This buffer is not managed by codemp");
 }
 
 
