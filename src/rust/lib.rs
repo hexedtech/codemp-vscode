@@ -1,5 +1,5 @@
 #![deny(clippy::all)]
-use std::sync::Arc;
+use std::{sync::Arc, collections::HashSet};
 use codemp::{
 	prelude::*,
 	proto::{RowCol, CursorEvent},
@@ -10,7 +10,41 @@ use napi::tokio;
 #[derive(Debug)]
 struct JsCodempError(CodempError);
 
+pub type OpTuple = (String, u32, String, u32);
 
+#[napi]
+pub struct OpCache {
+	store: HashSet<OpTuple>,
+}
+	
+#[napi]
+impl OpCache {
+	#[napi(constructor)]
+	pub fn new() -> Self {
+		OpCache {
+			store: HashSet::new(),
+		}
+	}
+
+	#[napi]
+	pub fn put(&mut self, buf: String, start: u32, text: String, end: u32) -> bool {
+		let op = (buf, start, text, end);
+		let res = self.store.contains(&op);
+		self.store.insert(op);
+		res
+	}
+
+	#[napi]
+	pub fn get(&mut self, buf: String, start: u32, text: String, end: u32) -> bool {
+		let op = (buf, start, text, end);
+		if self.store.contains(&op) {
+			self.store.remove(&op);
+			true
+		} else {
+			false
+		}
+	}
+}
 
 
 
@@ -50,6 +84,7 @@ pub async fn leave_workspace() -> Result<(), napi::Error> {
 pub async fn disconnect_buffer(path: String) -> Result<bool, napi::Error> {
 	CODEMP_INSTANCE.disconnect_buffer(&path).await.map_err(|e| napi::Error::from(JsCodempError(e)))
 }
+
 
 
 

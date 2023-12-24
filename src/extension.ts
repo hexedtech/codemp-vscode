@@ -1,16 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { JsTextChange } from '..';
-//import * as types from 'index';
-//import * as codemp from '..';
-//import * as codemp from '/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node';
-const codemp = require("/home/***REMOVED***/projects/codemp/mine/codempvscode/codemp.node");
+import * as codemp from '../index'; // TODO why won't it work with a custom name???
 
-var CACHE : string = "";
-var BUFFERS : any = [];
+
+var CACHE = new codemp.OpCache();
+var BUFFERS : string[][] = [];
 let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
-//import * as codemp from "/home/***REMOVED***/projects/codemp/mine/vscode/target/debug/libcodemp_vscode.node";
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -156,12 +152,13 @@ async function attach() {
 	console.log("attached to buffer", buffer_name);
 	console.log("buffer", buffer);
 
+	// let fileUri = buffer_name;
+	// const fileName = 'untitled-1';
+	// const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: fileName });
+	// vscode.workspace.openTextDocument()
+	// await vscode.workspace.openTextDocument(newFileUri);
+	// vscode.commands.executeCommand('vscode.open', newFileUri);
 	let editor = vscode.window.activeTextEditor;
-	let fileUri = buffer_name;
-	const fileName = 'untitled-1';
-	const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: fileName });
-	await vscode.workspace.openTextDocument(newFileUri);
-	vscode.commands.executeCommand('vscode.open', newFileUri);
 
 	if (editor === undefined) {
 		vscode.window.showInformationMessage(`Open a file first`);	
@@ -178,7 +175,7 @@ async function attach() {
 		console.log(event.reason);
 		if (event.document.uri != file_uri) return; // ?
 		for (let change of event.contentChanges) {
-			if (`${change.rangeOffset}${change.text}${change.rangeOffset+change.rangeLength}` === CACHE) continue; // LMAO
+			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
 			buffer.send({
 				span: { 
 					start: change.rangeOffset,
@@ -193,30 +190,36 @@ async function attach() {
 	console.log("test");
 
 	buffer.callback((event: any) => {
-		CACHE = `${event.span.start}${event.content}${event.span.end}`; //what's the difference between e.text and e.content like it's on lib.rs?
+		CACHE.put(buffer_name, event.span.start, event.content, event.span.end); //what's the difference between e.text and e.content like it's on lib.rs?
 
 		if (editor === undefined) { return } // TODO say something!!!!!!
 		let range = new vscode.Range(
 			editor.document.positionAt(event.span.start),
 			editor.document.positionAt(event.span.end)
 		)
-		editor.edit(editBuilder => editBuilder.replace(range, event.content))
+		editor.edit(editBuilder => {
+			editBuilder
+				.replace(range, event.content)
+		})
 	});
 }
 
 async function disconnectBuffer() {
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
-	codemp.disconnect(buffer);
+	codemp.disconnectBuffer(buffer);
 	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
 }
 
-function sync() {
+async function sync() {
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) { return }
 	for (let tuple of BUFFERS) {
-		if (tuple[0] == editor?.document.uri) {
+		console.log(tuple[0]);
+		console.log("\n");
+		console.log(editor?.document.uri.toString());
+		if (tuple[0] === editor?.document.uri.toString()) {
 
-			let buffer = codemp.getBuffer(tuple[1]);
+			let buffer = await codemp.getBuffer(tuple[1]);
 			if (buffer==null) {
 				vscode.window.showErrorMessage("This buffer does not exist anymore");
 				return;
@@ -224,10 +227,10 @@ function sync() {
 			let range = new vscode.Range(
 				editor.document.positionAt(0),
 				editor.document.positionAt(editor.document.getText().length)
-			)
-			let content = buffer.content()
-			CACHE = `${range.start}${content}${range.end}`;
-			editor.edit(editBuilder => editBuilder.replace(range, content))
+			);
+			let content = buffer.content();
+			CACHE.put(tuple[1],0,content,editor.document.getText().length);
+			editor.edit(editBuilder => editBuilder.replace(range, content));
 			return;
 		}
 	}
