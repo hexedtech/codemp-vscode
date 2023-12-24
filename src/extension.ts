@@ -55,8 +55,6 @@ async function join() {
 	let workspace = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"});
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file needed to update other clients cursors"}))!;
 	let editor = vscode.window.activeTextEditor;
-	//let editor = activeEditor.document.getText();
-	//let doc = editor?.document;
 	if (workspace === undefined) return  // user cancelled with ESC
 	if (workspace.length == 0) workspace = "default"
 
@@ -67,18 +65,14 @@ async function join() {
 	try{
 	controller.callback(( event:any) => {
 		try{
-		//console.log(event);
 		let curPos  = vscode.window.activeTextEditor?.selection.active;
 		let PosNumber = curPos?.line as number;
 		let posizione = new vscode.Position(0, PosNumber);
-		//console.log("posizione", posizione, "\n");
 		let range_start = new vscode.Position(event.start.row , event.start.col); // -1?
 		let range_end = new vscode.Position(event.end.row, event.end.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
-		/*console.log("range_start" ,range_start, "\n");
-		console.log("range_end" ,range_end, "\n");*/
 		const decorationRange = new vscode.Range(range_start, range_end);
 		smallNumberDecorationType.dispose();
-		smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ //should remove the highlighted text after a while 
+		smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ 
 			borderWidth: '5px',
 			borderStyle: 'solid',
 			overviewRulerColor: 'blue', 
@@ -92,9 +86,6 @@ async function join() {
 				borderColor: 'lightblue' //should create this color based on event.user (uuid)
 			}
 		});
-		//let DECORATION = vscode.window.createTextEditorDecorationType({backgroundColor: 'red', color: 'white'});
-		/*console.log("Editor" ,editor, "\n");
-		console.log("Decoration range " , [decorationRange], "\n");*/
 		editor?.setDecorations(smallNumberDecorationType, [decorationRange]);
 	}catch(e){
 		console.log("Error", e, "\n");
@@ -109,14 +100,8 @@ async function join() {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri.toString()
 		let selection = event.selections[0] // TODO there may be more than one cursor!!
-		//let anchor = [selection.anchor.line+1, selection.anchor.character]
-		//let position = [selection.active.line+1, selection.active.character+1]
 		let anchor : [number, number] = [selection.anchor.line, selection.anchor.character];
 		let position : [number, number] = [selection.active.line, selection.active.character+1];
-		/*console.log("Buffer from selection" + buffer+"\n");
-		console.log("selection " + selection+"\n");
-		console.log("Anchor selection" + anchor+"\n");
-		console.log("position selection" + position+"\n");*/
 		controller.send(buffer, anchor, position);
 	});
 	vscode.window.showInformationMessage(`Connected to workspace @[${workspace}]`);
@@ -190,7 +175,7 @@ async function attach() {
 	console.log("test");
 
 	buffer.callback((event: any) => {
-		CACHE.put(buffer_name, event.span.start, event.content, event.span.end); //what's the difference between e.text and e.content like it's on lib.rs?
+		CACHE.put(buffer_name, event.span.start, event.content, event.span.end);
 
 		if (editor === undefined) { return } // TODO say something!!!!!!
 		let range = new vscode.Range(
