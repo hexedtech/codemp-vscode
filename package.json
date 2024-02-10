@@ -61,7 +61,7 @@
     "bundle": "vsce package"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^1.0.0",
+    "@napi-rs/cli": "^2.16.3",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.81.0",
@@ -74,7 +74,6 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@napi-rs/cli": "^2.16.3",
     "@vscode/vsce": "^2.22.0"
   }
 }

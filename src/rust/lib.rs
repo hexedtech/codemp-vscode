@@ -4,6 +4,7 @@ pub mod client;
 pub mod workspace;
 pub mod cursor;
 pub mod buffer;
+pub mod op_cache;
 
 #[derive(Debug)]
 struct JsCodempError(codemp::Error);

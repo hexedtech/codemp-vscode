@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use napi_derive::napi;
 
 pub type OpTuple = (String, u32, String, u32);
 
