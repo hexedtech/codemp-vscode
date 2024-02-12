@@ -17,13 +17,6 @@ impl From::<Arc<codemp::cursor::Controller>> for JsCursorController {
 #[napi]
 impl JsCursorController {
 
-
-	/*#[napi]
-	pub fn call_threadsafe_recv(callback: JsFunction) -> Result<()>{
-		let tsfn: ThreadsafeFunction<u32, ErrorStrategy::CalleeHandled> =
-    callback.create_threadsafe_function(0, |ctx| Ok(vec![ctx.value + 1]))?;
-	}*/
-
 	#[napi(ts_args_type = "fun: (event: JsCursorEvent) => void")]
 	pub fn callback(&self, fun: napi::JsFunction) -> napi::Result<()>{ 
 		let tsfn : ThreadsafeFunction<codemp::proto::cursor::CursorEvent, ErrorStrategy::Fatal> = 
@@ -46,27 +39,6 @@ impl JsCursorController {
 		});
 		Ok(())
 	}
-
-
-	// let controller = codemp.join('default').await
-	// // TODO register cursor callback, when cursormoved call { controller.send(event) }
-	// controller.callback( (ev) => {
-	// 		editor.change(event.tex)
-	// });
-
-
-
-
-
-
-	// #[napi]
-	// pub async fn recv(&self) -> napi::Result<JsCursorEvent> {
-	// 	Ok(
-	// 		self.0.recv().await
-	// 			.map_err(|e| napi::Error::from(JsCodempError(e)))?
-	// 			.into()
-	// 	)
-	// }
 
 	#[napi]
 	pub fn send(&self, buffer: String, start: (i32, i32), end: (i32, i32)) -> napi::Result<()> {
