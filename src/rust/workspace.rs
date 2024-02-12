@@ -19,23 +19,23 @@ impl From<Arc<codemp::Workspace>> for JsWorkspace {
 impl JsWorkspace {
 
 	#[napi]
-	pub fn id(&self) -> napi::Result<String> {
-		Ok(self.0.id())
+	pub fn id(&self) -> String {
+		self.0.id()
 	}
 	
 	#[napi]
-	pub fn filetree(&self) -> napi::Result<Vec<String>> {
-		Ok(self.0.filetree())
+	pub fn filetree(&self) -> Vec<String> {
+		self.0.filetree()
 	}
 
 	#[napi]
-	pub fn cursor(&self) -> napi::Result<JsCursorController> {
-		Ok(JsCursorController::from(self.0.cursor()))
+	pub fn cursor(&self) -> JsCursorController {
+		JsCursorController::from(self.0.cursor())
 	}
 
 	#[napi]
-	pub fn buffer_by_name(&self, path: String) -> napi::Result<Option<JsBufferController>> {
-		Ok(self.0.buffer_by_name(&path).map(|b| JsBufferController::from(b)))
+	pub fn buffer_by_name(&self, path: String) -> Option<JsBufferController> {
+		self.0.buffer_by_name(&path).map(|b| JsBufferController::from(b))
 	}
 
 	#[napi]
