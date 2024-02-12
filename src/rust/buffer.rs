@@ -79,8 +79,8 @@ impl JsBufferController {
 
 
 	#[napi]
-	pub fn content(&self) -> napi::Result<String> {
-		Ok(self.0.content())
+	pub fn content(&self) -> String {
+		self.0.content()
 	}
 
 

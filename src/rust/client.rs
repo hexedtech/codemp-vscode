@@ -33,13 +33,13 @@ impl JsCodempClient {
 
 	#[napi]
 	/// get workspace with given id, if it exists
-	pub async fn get_workspace(&self, workspace: String) -> napi::Result<Option<JsWorkspace>> {
-		Ok(self.0.read().await.get_workspace(&workspace).map(|w| JsWorkspace::from(w)))
+	pub async fn get_workspace(&self, workspace: String) -> Option<JsWorkspace> {
+		self.0.read().await.get_workspace(&workspace).map(|w| JsWorkspace::from(w))
 	}
 
 	#[napi]
 	/// return current sessions's user id
-	pub async fn user_id(&self) -> napi::Result<String> {
-		Ok(self.0.read().await.user_id().to_string())
+	pub async fn user_id(&self) -> String {
+		self.0.read().await.user_id().to_string()
 	}
 }
