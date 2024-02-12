@@ -24,12 +24,20 @@
         "title": "Connect to a codemp host"
       },
       {
+        "command": "codempvscode.login",
+        "title": "Log into a codemp account"
+      },
+      {
         "command": "codempvscode.join",
         "title": "Join a codemp workspace"
       },
       {
         "command": "codempvscode.createBuffer",
-        "title": "create a codemp buffer"
+        "title": "Create a codemp buffer"
+      },
+      {
+        "command": "codempvscode.listBuffers",
+        "title": "List all buffers of joined Workspace"
       },
       {
         "command": "codempvscode.attach",
@@ -37,7 +45,7 @@
       },
       {
         "command": "codempvscode.disconnectBuffer",
-        "title": "disconnect from a codemp Buffer"
+        "title": "disconnect from a codemp Buffer (unused)"
       },
       {
         "command": "codempvscode.sync",

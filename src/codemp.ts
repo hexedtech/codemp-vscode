@@ -1,36 +1,57 @@
 import * as vscode from 'vscode';
 import * as codemp from '../index'; // TODO why won't it work with a custom name???
 
+class BufferMapping {
+	codemp: string;
+	vscode: vscode.TextEditor;
+
+	constructor(codemp_path: string, editor: vscode.TextEditor) {
+		this.codemp = codemp_path;
+		this.vscode = editor;
+	}
+}
 
 var CACHE = new codemp.OpCache();
-var BUFFERS : string[][] = [];
+var BUFFERS : BufferMapping[] = [];
 let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
+let client : codemp.JsCodempClient | null = null;
+let workspace : codemp.JsWorkspace | null = null;
+
 
 export async function connect() {
-	let host = await vscode.window.showInputBox({prompt: "server host (default to http://alemi.dev:50052)"});
-	if (host === undefined) return  // user cancelled with ESC
-	if (host.length == 0) host = "http://alemi.dev:50052"
-	await codemp.connect(host);
-	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);
+	/*let host = await vscode.window.showInputBox({prompt: "server host (default to http://codemp.alemi.dev:50053)"});
+	if(host===null) host="http://codemp.alemi.dev:50053";
+	client = await codemp.connect(host);
+	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);*/
+	client = await codemp.connect();
+	vscode.window.showInformationMessage('Connected to codemp with default host');
+}
+
+export async function login(){
+	let username = await vscode.window.showInputBox({prompt: "enter username"});
+	let workspace_name = await vscode.window.showInputBox({prompt: "enter workspace name"});
+	if(client===null) throw "connect first";
+	if(workspace_name===null) workspace_name="asd";
+	await client.login(username!,"lmaodefaultpassword",workspace_name);
+	vscode.window.showInformationMessage("Logged with username " + username + " into workspace " + workspace_name);
 }
 
 
 export async function join() {
-	let workspace = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"});
+	let workspace_id = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"});
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file needed to update other clients cursors"}))!;
 	//let editor = vscode.window.activeTextEditor;
-	if (workspace === undefined) return  // user cancelled with ESC
-	if (workspace.length == 0) workspace = "default"
+	if (workspace_id === undefined) return  // user cancelled with ESC
+	if (workspace_id.length == 0) workspace_id = "asd"
 
 	if (buffer === undefined) return  // user cancelled with ESC
-	if (buffer.length == 0) {workspace = "default"; buffer="fucl"; }
+	if (buffer.length == 0) {workspace_id = "asd"; buffer="fucl"; }
 	
-	let controller : codemp.JsCursorController = await codemp.join(workspace)
-	controller.callback(( event:any) => {
-		let buf : string = event.textEditor.document.uri.toString()
-		let curPos  = vscode.window.activeTextEditor?.selection.active;
-		let PosNumber : number = curPos?.line as number;
-		let posizione : vscode.Position = new vscode.Position(0, PosNumber);
+	if(client===null) throw "connect first";
+	workspace = await client.joinWorkspace(workspace_id)
+	let controller = workspace.cursor();
+	controller.callback((event: codemp.JsCursorEvent) => {
+		console.log(`received cursor event, im on ${event.buffer}`)
 		let range_start : vscode.Position = new vscode.Position(event.start.row , event.start.col); // -1?
 		let range_end : vscode.Position = new vscode.Position(event.end.row, event.end.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
@@ -49,57 +70,40 @@ export async function join() {
 				borderColor: 'lightblue' //should create this color based on event.user (uuid)
 			}
 		});
-		for (let tuple of BUFFERS) {
-			if (tuple[0].toString() === buf) {
-				vscode.window.activeTextEditor?.setDecorations(smallNumberDecorationType, [decorationRange]);
+		for (let mapping of BUFFERS) {
+			console.log(`checking tuple ${mapping}`);
+			if (mapping.codemp === event.buffer) {
+				mapping.vscode.setDecorations(smallNumberDecorationType, [decorationRange]);
+				return
 			}
 		}
+		console.log(`wtf buffers didn't contain it???? ${BUFFERS}`)
 	});
 
 
 	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
-		let buf : string = event.textEditor.document.uri.toString()
+		let buf = event.textEditor.document.uri;
 		let selection : vscode.Selection = event.selections[0] // TODO there may be more than one cursor!!
 		let anchor : [number, number] = [selection.anchor.line, selection.anchor.character];
 		let position : [number, number] = [selection.active.line, selection.active.character+1];
-		for (let tuple of BUFFERS) {
-			if (tuple[0].toString() === buf) {
-			controller.send(tuple[1], anchor, position);
+		for (let mapping of BUFFERS) {
+			if (mapping.vscode.document.uri === buf) {
+				controller.send(mapping.codemp, anchor, position);
 			}
 		}
 	});
+	console.log("workspace id \n");
+	console.log(workspace.id());
 	vscode.window.showInformationMessage(`Connected to workspace @[${workspace}]`);
 }
 
 
 export async function createBuffer() {
-	let workspace="default";//ask which workspace
 	let bufferName : any = (await vscode.window.showInputBox({prompt: "path of the buffer to create"}))!;
-	codemp.create(bufferName);
+	if(workspace===null) throw "join a workspace first"
+	workspace.create(bufferName);
 	console.log("new buffer created ", bufferName, "\n");
-	let editor = vscode.window.activeTextEditor;
-
-	if (editor === undefined) { return } // TODO say something!!!!!!
-
-	/*let range = new vscode.Range(
-		editor.document.positionAt(0),
-		editor.document.positionAt(editor.document.getText().length)
-	)*/
-	let buffer : codemp.JsBufferController = await codemp.attach(bufferName);
-	console.log("buffer");
-	console.log(buffer);
-	//let opSeq = {range.start,editor.document.getText(),range.end}
-	//buffer.send(range.start,editor.document.getText(),range.end); //test it plz coded this at 10am :(
-		buffer.send({
-			span: { 
-				start: 0,
-				end: 0 //previous length is 0
-			},
-			content: editor.document.getText()
-		});
-		console.log("sent all the content", editor.document.getText());
-	//Should i disconnect or stay attached to buffer???
 }
 
 
@@ -108,7 +112,8 @@ export async function createBuffer() {
 
 export async function attach() {
 	let buffer_name : any = (await vscode.window.showInputBox({prompt: "buffer to attach to"}))!;
-	let buffer : codemp.JsBufferController = await codemp.attach(buffer_name);
+	if(workspace===null) throw "join a workspace first"
+	let buffer : codemp.JsBufferController = await workspace.attach(buffer_name);
 	console.log("attached to buffer", buffer_name);
 	console.log("buffer", buffer);
 	let editor = vscode.window.activeTextEditor;
@@ -132,7 +137,7 @@ export async function attach() {
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri : vscode.Uri = editor.document.uri;
-	BUFFERS.push([file_uri, buffer_name]);
+	BUFFERS.push(new BufferMapping(buffer_name, editor));
 
 	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) => {
 		//console.log(event.reason);
@@ -167,24 +172,24 @@ export async function attach() {
 	});
 }
 
-export async function disconnectBuffer() {
+/*export async function disconnectBuffer() { TODO i should just set buffer=null 
 	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
 	codemp.disconnectBuffer(buffer);
 	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
-}
+}*/
 
 export async function sync() {
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) { return }
-	for (let tuple of BUFFERS) {
-		console.log(tuple[0].toString());
+	for (let mapping of BUFFERS) {
+		console.log(mapping.vscode.document.uri);
 		//console.log(tuple[1]);
 		console.log("\n");
 		console.log(editor?.document.uri.toString());
 		//console.log(BUFFERS[0]);
-		if (tuple[0].toString() === editor?.document.uri.toString()) {
-
-			let buffer = await codemp.getBuffer(tuple[1]);
+		if (mapping.vscode.document.uri === editor?.document.uri) {
+			if(workspace===null) throw "join a workspace first"
+			let buffer = await workspace.bufferByName(mapping.codemp);
 			if (buffer==null) {
 				vscode.window.showErrorMessage("This buffer does not exist anymore");
 				return;
@@ -195,7 +200,7 @@ export async function sync() {
 				editor.document.positionAt(editor.document.getText().length)
 			);
 			
-			CACHE.put(tuple[1],0,content,editor.document.getText().length);
+			CACHE.put(mapping.codemp, 0, content, editor.document.getText().length);
 			editor.edit(editBuilder => editBuilder.replace(range, content));
 			return;
 		}
@@ -205,7 +210,11 @@ export async function sync() {
 	}
 }
 
-
+export async function listBuffers(){
+	if(workspace===null) throw "join a workspace first"
+	let buffers = workspace.filetree();
+	console.log(buffers); // improve UX
+}
 
 
 

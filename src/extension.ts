@@ -1,41 +1,39 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as codemp from '../index'; // TODO why won't it work with a custom name???
 import * as codemplogic from './codemp';
 
-
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
-
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "codempvscode" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('codempvscode.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage(process.cwd());
-	});
-	let connectCommand = vscode.commands.registerCommand('codempvscode.connect', codemplogic.connect);
-	let joinCommand = vscode.commands.registerCommand('codempvscode.join', codemplogic.join);
-	let attachCommand = vscode.commands.registerCommand('codempvscode.attach', codemplogic.attach);
-	let createBufferCommand = vscode.commands.registerCommand('codempvscode.createBuffer', codemplogic.createBuffer);
-	let disconnectBufferCommand = vscode.commands.registerCommand('codempvscode.disconnectBuffer', codemplogic.disconnectBuffer);
-	let syncBufferCommand = vscode.commands.registerCommand('codempvscode.sync', codemplogic.sync);
-	context.subscriptions.push(connectCommand);
-	context.subscriptions.push(joinCommand);
-	context.subscriptions.push(attachCommand);
-	context.subscriptions.push(createBufferCommand);
-	context.subscriptions.push(disconnectBufferCommand);
-	context.subscriptions.push(syncBufferCommand);
-	context.subscriptions.push(disposable);
+	// start codemp log poller
+	let channel = vscode.window.createOutputChannel("codemp", {log: true});
+	let logger = new codemp.JsLogger(false);
+	log_poller_task(logger, channel); // don't await it! run it in background forever
+
+	// register commands: the commandId parameter must match the command field in package.json
+	for (let cmd of [
+		vscode.commands.registerCommand('codempvscode.connect', codemplogic.connect),
+		vscode.commands.registerCommand('codempvscode.login', codemplogic.login),
+		vscode.commands.registerCommand('codempvscode.join', codemplogic.join),
+		vscode.commands.registerCommand('codempvscode.attach', codemplogic.attach),
+		vscode.commands.registerCommand('codempvscode.createBuffer', codemplogic.createBuffer),
+		vscode.commands.registerCommand('codempvscode.listBuffers', codemplogic.listBuffers),
+		// vscode.commands.registerCommand('codempvscode.disconnectBuffer', codemplogic.disconnectBuffer),
+		vscode.commands.registerCommand('codempvscode.sync', codemplogic.sync),
+	]) {
+		context.subscriptions.push(cmd);
+	}
 }
 
-
-
-
+async function log_poller_task(logger: codemp.JsLogger, channel: vscode.LogOutputChannel) {
+	console.log("starting logger task");
+	while (true) {
+		let message = await logger.message();
+		if (message === null) break;
+		console.log(message);
+		channel.info(message);
+	}
+	console.log("stopping logger task");
+}
