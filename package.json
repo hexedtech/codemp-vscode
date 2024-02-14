@@ -52,6 +52,10 @@
         "title": "Sync the current buffer"
       },
       {
+        "command": "codempvscode.printOpCache",
+        "title": "Print current OpCache"
+      },
+      {
         "command": "codempvscode.helloWorld",
         "title": "Hello World (debug)"
       }
