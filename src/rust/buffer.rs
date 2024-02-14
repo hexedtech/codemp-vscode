@@ -63,11 +63,12 @@ impl JsBufferController {
 		)?;
 		let _controller = self.0.clone();
 		tokio::spawn(async move {
-			tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+			//tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 			loop {
+				tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 				match _controller.recv().await {
 					Ok(event) => {
-						tsfn.call(event.clone(), ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
+						tsfn.call(event, ThreadsafeFunctionCallMode::NonBlocking); //check this shit with tracing also we could use Ok(event) to get the error
 					},
 					Err(codemp::Error::Deadlocked) => continue,
 					Err(e) => break tracing::warn!("error receiving: {}", e),
@@ -83,8 +84,10 @@ impl JsBufferController {
 		self.0.content()
 	}
 
-
-
+	#[napi]
+	pub fn get_name(&self) -> String {
+		self.0.name().to_string()
+	}
 
 	#[napi]
 	pub async fn recv(&self) -> napi::Result<JsTextChange> {
