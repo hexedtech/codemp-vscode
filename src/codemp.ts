@@ -1,18 +1,11 @@
 import * as vscode from 'vscode';
 import * as codemp from '../index'; // TODO why won't it work with a custom name???
+import * as mapping from "./mapping";
+import { LOGGER } from './extension';
 
-class BufferMapping {
-	codemp: string;
-	vscode: vscode.TextEditor;
 
-	constructor(codemp_path: string, editor: vscode.TextEditor) {
-		this.codemp = codemp_path;
-		this.vscode = editor;
-	}
-}
-
-var CACHE = new codemp.OpCache();
-var BUFFERS : BufferMapping[] = [];
+let CACHE = new codemp.OpCache();
+let MAPPINGS = new mapping.BufferMappingContainer();
 let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
 let client : codemp.JsCodempClient | null = null;
 let workspace : codemp.JsWorkspace | null = null;
@@ -39,19 +32,15 @@ export async function login(){
 
 export async function join() {
 	let workspace_id = await vscode.window.showInputBox({prompt: "workspace to attach (default to default)"});
-	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file needed to update other clients cursors"}))!;
 	//let editor = vscode.window.activeTextEditor;
 	if (workspace_id === undefined) return  // user cancelled with ESC
 	if (workspace_id.length == 0) workspace_id = "asd"
 
-	if (buffer === undefined) return  // user cancelled with ESC
-	if (buffer.length == 0) {workspace_id = "asd"; buffer="fucl"; }
 	
 	if(client===null) throw "connect first";
 	workspace = await client.joinWorkspace(workspace_id)
 	let controller = workspace.cursor();
 	controller.callback((event: codemp.JsCursorEvent) => {
-		console.log(`received cursor event, im on ${event.buffer}`)
 		let range_start : vscode.Position = new vscode.Position(event.start.row , event.start.col); // -1?
 		let range_end : vscode.Position = new vscode.Position(event.end.row, event.end.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
@@ -70,14 +59,10 @@ export async function join() {
 				borderColor: 'lightblue' //should create this color based on event.user (uuid)
 			}
 		});
-		for (let mapping of BUFFERS) {
-			console.log(`checking tuple ${mapping}`);
-			if (mapping.codemp === event.buffer) {
-				mapping.vscode.setDecorations(smallNumberDecorationType, [decorationRange]);
-				return
-			}
-		}
-		console.log(`wtf buffers didn't contain it???? ${BUFFERS}`)
+
+		let m = MAPPINGS.get_by_buffer(event.buffer);
+		if (m===null) return;
+		m.editor.setDecorations(smallNumberDecorationType, [decorationRange]);
 	});
 
 
@@ -87,11 +72,9 @@ export async function join() {
 		let selection : vscode.Selection = event.selections[0] // TODO there may be more than one cursor!!
 		let anchor : [number, number] = [selection.anchor.line, selection.anchor.character];
 		let position : [number, number] = [selection.active.line, selection.active.character+1];
-		for (let mapping of BUFFERS) {
-			if (mapping.vscode.document.uri === buf) {
-				controller.send(mapping.codemp, anchor, position);
-			}
-		}
+		let n = MAPPINGS.get_by_editor(buf)
+		if (n===null) return;
+		controller.send(n.buffer.getName(),anchor,position);
 	});
 	console.log("workspace id \n");
 	console.log(workspace.id());
@@ -128,7 +111,7 @@ export async function attach() {
 		const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: "" });
 		//vscode.workspace.openTextDocument()
 		await vscode.workspace.openTextDocument(newFileUri);
-		vscode.commands.executeCommand('vscode.open', newFileUri);
+		vscode.commands.executeCommand('vscode.open', newFileUri); //It should already be opened with the api command above idk why i do this?
 		//vscode.window.showInformationMessage(`Open a file first`);	
 		//return;
 	}
@@ -137,13 +120,13 @@ export async function attach() {
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri : vscode.Uri = editor.document.uri;
-	BUFFERS.push(new BufferMapping(buffer_name, editor));
+	MAPPINGS.put(new mapping.BufferMapping(buffer, editor));
 
 	vscode.workspace.onDidChangeTextDocument((event:vscode.TextDocumentChangeEvent) => {
-		//console.log(event.reason);
 		if (event.document.uri != file_uri) return; // ?
 		for (let change of event.contentChanges) {
 			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
+			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			buffer.send({
 				span: { 
 					start: change.rangeOffset,
@@ -153,14 +136,12 @@ export async function attach() {
 			});
 		}
 	});
-	
-	//await new Promise((resolve) => setTimeout(resolve, 200)); // tonioware
-	//console.log("test");
 
-	buffer.callback((event: any) => {
+	buffer.callback((event: codemp.JsTextChange) => {
+		LOGGER.info(`buffer.callback(event: [${event.span.start}, ${event.content}, ${event.span.end}])`)
 		CACHE.put(buffer_name, event.span.start, event.content, event.span.end);
 
-		if (editor === undefined) { return } // TODO say something!!!!!!
+		if (editor === undefined) { throw "Open an editor first" } 
 		let range = new vscode.Range(
 			editor.document.positionAt(event.span.start),
 			editor.document.positionAt(event.span.end)
@@ -168,7 +149,7 @@ export async function attach() {
 		editor.edit(editBuilder => {
 			editBuilder
 				.replace(range, event.content)
-		})
+		});
 	});
 }
 
@@ -179,35 +160,23 @@ export async function attach() {
 }*/
 
 export async function sync() {
+	if(workspace===null) throw "join a workspace first";
 	let editor = vscode.window.activeTextEditor;
-	if (editor === undefined) { return }
-	for (let mapping of BUFFERS) {
-		console.log(mapping.vscode.document.uri);
-		//console.log(tuple[1]);
-		console.log("\n");
-		console.log(editor?.document.uri.toString());
-		//console.log(BUFFERS[0]);
-		if (mapping.vscode.document.uri === editor?.document.uri) {
-			if(workspace===null) throw "join a workspace first"
-			let buffer = await workspace.bufferByName(mapping.codemp);
-			if (buffer==null) {
-				vscode.window.showErrorMessage("This buffer does not exist anymore");
-				return;
-			}
-			let content = buffer.content();
-			let range = new vscode.Range(
-				editor.document.positionAt(0),
-				editor.document.positionAt(editor.document.getText().length)
-			);
-			
-			CACHE.put(mapping.codemp, 0, content, editor.document.getText().length);
-			editor.edit(editBuilder => editBuilder.replace(range, content));
-			return;
-		}
-		else{
-			vscode.window.showErrorMessage("This buffer is not managed by codemp");
-		}
-	}
+	if (editor === undefined) throw "no active editor to sync";
+	let k = MAPPINGS.get_by_editor(editor.document.uri);
+	if(k === null) throw "No such buffer managed by codemp"
+	let buffer = workspace.bufferByName(k.buffer.getName());
+	if (buffer==null) throw "This buffer does not exist anymore";
+
+	let content = buffer.content();
+	let doc_len = editor.document.getText().length;
+	let range = new vscode.Range(
+		editor.document.positionAt(0),
+		editor.document.positionAt(doc_len)
+	);
+	
+	CACHE.put(k.buffer.getName(), 0, content, doc_len);
+	editor.edit(editBuilder => editBuilder.replace(range, content));
 }
 
 export async function listBuffers(){
@@ -216,12 +185,13 @@ export async function listBuffers(){
 	console.log(buffers); // improve UX
 }
 
-
-
-
 // This method is called when your extension is deactivated
 export function deactivate() {
 //Maybe i should disconnect from every workspace and buffer ??? // TODO
 }
 
 
+export function printOpCache() {
+	console.log("CACHE\n");
+	console.log(CACHE.toString());
+}
