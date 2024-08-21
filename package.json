@@ -24,14 +24,6 @@
         "title": "Connect to a codemp host"
       },
       {
-        "command": "codempvscode.login",
-        "title": "Log into a codemp account"
-      },
-      {
-        "command": "codempvscode.join",
-        "title": "Join a codemp workspace"
-      },
-      {
         "command": "codempvscode.createBuffer",
         "title": "Create a codemp buffer"
       },
@@ -67,9 +59,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "compile": "napi build && tsc -p ./",
-    "build": "napi build --release",
-    "build:debug": "napi build",
+    "compile": "tsc -p ./", 
     "bundle": "vsce package"
   },
   "devDependencies": {
@@ -86,6 +76,8 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@vscode/vsce": "^2.22.0"
+    "@codemp/codemp" : "0.0.4",
+    "@vscode/vsce": "^2.22.0",
+    "npx": "^10.2.2"
   }
 }

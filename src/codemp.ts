@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as codemp from '../index'; // TODO why won't it work with a custom name???
+import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
 import * as mapping from "./mapping";
 import { LOGGER } from './extension';
 
@@ -7,26 +7,16 @@ import { LOGGER } from './extension';
 let CACHE = new codemp.OpCache();
 let MAPPINGS = new mapping.BufferMappingContainer();
 let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
-let client : codemp.JsCodempClient | null = null;
-let workspace : codemp.JsWorkspace | null = null;
+let client : codemp.Client | null = null;
+let workspace : codemp.Workspace | null = null;
+let username : string;
 
 
-export async function connect() {
-	/*let host = await vscode.window.showInputBox({prompt: "server host (default to http://codemp.alemi.dev:50053)"});
-	if(host===null) host="http://codemp.alemi.dev:50053";
-	client = await codemp.connect(host);
-	vscode.window.showInformationMessage(`Connected to codemp @[${host}]`);*/
-	client = await codemp.connect();
-	vscode.window.showInformationMessage('Connected to codemp with default host');
-}
 
-export async function login(){
+export async function connect(){
 	let username = await vscode.window.showInputBox({prompt: "enter username"});
-	let workspace_name = await vscode.window.showInputBox({prompt: "enter workspace name"});
-	if(client===null) throw "connect first";
-	if(workspace_name===null) workspace_name="asd";
-	await client.login(username!,"lmaodefaultpassword",workspace_name);
-	vscode.window.showInformationMessage("Logged with username " + username + " into workspace " + workspace_name);
+	if(username===null) throw "choose an username";
+	client = await codemp.connect("http://codemp.alemi.dev:50053", username!, "lmaodefaultpassword");
 }
 
 
@@ -38,11 +28,11 @@ export async function join() {
 
 	
 	if(client===null) throw "connect first";
-	workspace = await client.joinWorkspace(workspace_id)
+	workspace = await client.join_workspace(workspace_id)
 	let controller = workspace.cursor();
-	controller.callback((event: codemp.JsCursorEvent) => {
-		let range_start : vscode.Position = new vscode.Position(event.start.row , event.start.col); // -1?
-		let range_end : vscode.Position = new vscode.Position(event.end.row, event.end.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
+	controller.callback((event: codemp.Cursor) => {
+		let range_start : vscode.Position = new vscode.Position(event.startRow , event.startCol); // -1?
+		let range_end : vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
 		smallNumberDecorationType.dispose();
 		smallNumberDecorationType = vscode.window.createTextEditorDecorationType({ 
@@ -74,7 +64,15 @@ export async function join() {
 		let position : [number, number] = [selection.active.line, selection.active.character+1];
 		let n = MAPPINGS.get_by_editor(buf)
 		if (n===null) return;
-		controller.send(n.buffer.getName(),anchor,position);
+		let cursor : codemp.Cursor = {
+			startRow: selection.anchor.line,
+			startCol: selection.anchor.character,
+			endRow: selection.active.line,
+			endCol: selection.active.character+1,
+			buffer: n.buffer.get_name(),
+			user: username
+		}
+		controller.send(cursor);
 	});
 	console.log("workspace id \n");
 	console.log(workspace.id());
@@ -96,7 +94,7 @@ export async function createBuffer() {
 export async function attach() {
 	let buffer_name : any = (await vscode.window.showInputBox({prompt: "buffer to attach to"}))!;
 	if(workspace===null) throw "join a workspace first"
-	let buffer : codemp.JsBufferController = await workspace.attach(buffer_name);
+	let buffer : codemp.BufferController = await workspace.attach(buffer_name);
 	console.log("attached to buffer", buffer_name);
 	console.log("buffer", buffer);
 	let editor = vscode.window.activeTextEditor;
@@ -128,23 +126,21 @@ export async function attach() {
 			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
 			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			buffer.send({
-				span: { 
 					start: change.rangeOffset,
-					end: change.rangeOffset+change.rangeLength
-				},
-				content: change.text
+					end: change.rangeOffset+change.rangeLength,
+				    content: change.text
 			});
 		}
 	});
 
-	buffer.callback((event: codemp.JsTextChange) => {
-		LOGGER.info(`buffer.callback(event: [${event.span.start}, ${event.content}, ${event.span.end}])`)
-		CACHE.put(buffer_name, event.span.start, event.content, event.span.end);
+	buffer.callback((event: codemp.TextChange) => {
+		LOGGER.info(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
+		CACHE.put(buffer_name, event.start, event.content, event.end);
 
 		if (editor === undefined) { throw "Open an editor first" } 
 		let range = new vscode.Range(
-			editor.document.positionAt(event.span.start),
-			editor.document.positionAt(event.span.end)
+			editor.document.positionAt(event.start),
+			editor.document.positionAt(event.end)
 		)
 		editor.edit(editBuilder => {
 			editBuilder
@@ -165,17 +161,17 @@ export async function sync() {
 	if (editor === undefined) throw "no active editor to sync";
 	let k = MAPPINGS.get_by_editor(editor.document.uri);
 	if(k === null) throw "No such buffer managed by codemp"
-	let buffer = workspace.bufferByName(k.buffer.getName());
+	let buffer = workspace.buffer_by_name(k.buffer.get_name());
 	if (buffer==null) throw "This buffer does not exist anymore";
 
-	let content = buffer.content();
+	let content = await buffer.content();
 	let doc_len = editor.document.getText().length;
 	let range = new vscode.Range(
 		editor.document.positionAt(0),
 		editor.document.positionAt(doc_len)
 	);
 	
-	CACHE.put(k.buffer.getName(), 0, content, doc_len);
+	CACHE.put(k.buffer.get_name(), 0, content, doc_len);
 	editor.edit(editBuilder => editBuilder.replace(range, content));
 }
 

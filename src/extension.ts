@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as codemp from '../index'; // TODO why won't it work with a custom name???
+import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
 import * as codemplogic from './codemp';
 
 export let LOGGER = vscode.window.createOutputChannel("codemp", {log: true});
@@ -15,7 +15,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// register commands: the commandId parameter must match the command field in package.json
 	for (let cmd of [
 		vscode.commands.registerCommand('codempvscode.connect', codemplogic.connect),
-		vscode.commands.registerCommand('codempvscode.login', codemplogic.login),
 		vscode.commands.registerCommand('codempvscode.join', codemplogic.join),
 		vscode.commands.registerCommand('codempvscode.attach', codemplogic.attach),
 		vscode.commands.registerCommand('codempvscode.createBuffer', codemplogic.createBuffer),
