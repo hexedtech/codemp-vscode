@@ -1,8 +1,8 @@
 {
-  "name": "codempvscode",
-  "displayName": "codempvscode",
+  "name": "codemp",
+  "displayName": "codemp",
   "description": "",
-  "repository": "https://github.com/codewithotherpeopleandchangenamelater/codemp-vscode",
+  "repository": "",
   "version": "0.0.1",
   "napi": {
     "name": "index"
@@ -20,35 +20,39 @@
   "contributes": {
     "commands": [
       {
-        "command": "codempvscode.connect",
+        "command": "codemp.connect",
         "title": "Connect to a codemp host"
       },
       {
-        "command": "codempvscode.createBuffer",
+        "command": "codemp.join",
+        "title": "Join a codemp Workspace"
+      },
+      {
+        "command": "codemp.createBuffer",
         "title": "Create a codemp buffer"
       },
       {
-        "command": "codempvscode.listBuffers",
+        "command": "codemp.listBuffers",
         "title": "List all buffers of joined Workspace"
       },
       {
-        "command": "codempvscode.attach",
+        "command": "codemp.attach",
         "title": "attach to a codemp workspace"
       },
       {
-        "command": "codempvscode.disconnectBuffer",
+        "command": "codemp.disconnectBuffer",
         "title": "disconnect from a codemp Buffer (unused)"
       },
       {
-        "command": "codempvscode.sync",
+        "command": "codemp.sync",
         "title": "Sync the current buffer"
       },
       {
-        "command": "codempvscode.printOpCache",
+        "command": "codemp.printOpCache",
         "title": "Print current OpCache"
       },
       {
-        "command": "codempvscode.helloWorld",
+        "command": "codemp.helloWorld",
         "title": "Hello World (debug)"
       }
     ]
@@ -59,7 +63,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "compile": "tsc -p ./", 
+    "compile": "tsc -p ./",
     "bundle": "vsce package"
   },
   "devDependencies": {
@@ -76,8 +80,8 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@codemp/codemp" : "0.0.4",
-    "@vscode/vsce": "^2.22.0",
+    "@codemp/codemp": "0.0.8-debug",
+    "@vscode/vsce": "^2.32.0",
     "npx": "^10.2.2"
   }
 }
