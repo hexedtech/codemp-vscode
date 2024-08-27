@@ -28,16 +28,16 @@
         "title": "Join a codemp Workspace"
       },
       {
-        "command": "codemp.createBuffer",
-        "title": "Create a codemp buffer"
+        "command": "codemp.attach",
+        "title": "attach to a codemp buffer"
       },
       {
         "command": "codemp.listBuffers",
         "title": "List all buffers of joined Workspace"
       },
       {
-        "command": "codemp.attach",
-        "title": "attach to a codemp workspace"
+        "command": "codemp.createBuffer",
+        "title": "Create a codemp buffer"
       },
       {
         "command": "codemp.disconnectBuffer",
@@ -80,7 +80,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "@codemp/codemp": "0.0.8-debug",
+    "@codemp/codemp": "0.1.0-debug",
     "@vscode/vsce": "^2.32.0",
     "npx": "^10.2.2"
   }

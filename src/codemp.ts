@@ -1,5 +1,3 @@
-
-
 import * as vscode from 'vscode';
 import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
 import * as mapping from "./mapping";
@@ -7,11 +5,10 @@ import { LOGGER } from './extension';
 
 
 let CACHE = new codemp.OpCache();
-let MAPPINGS = new mapping.BufferMappingContainer();
-let smallNumberDecorationType = vscode.window.createTextEditorDecorationType({});
 let client: codemp.Client | null = null;
 let workspace: codemp.Workspace | null = null;
 let username: string = "";
+let mine : boolean;
 
 export async function connect() {
 	let username = await vscode.window.showInputBox({ prompt: "enter username" });
@@ -22,11 +19,8 @@ export async function connect() {
 
 export async function join() {
 	let workspace_id = await vscode.window.showInputBox({ prompt: "workspace to attach (default to default)" });
-	//let editor = vscode.window.activeTextEditor;
 	if (workspace_id === undefined) return  // user cancelled with ESC
 	if (workspace_id.length == 0) workspace_id = "diamond"
-
-
 	if (client === null) throw "connect first";
 	workspace = await client.join_workspace(workspace_id)
 	let controller = workspace.cursor();
@@ -36,54 +30,43 @@ export async function join() {
 			let event = await controller.try_recv();
 			console.log("debug 13");
 			if (event === null) break;
-			let range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
-			let range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
-			const decorationRange = new vscode.Range(range_start, range_end);
-			smallNumberDecorationType.dispose();
-			smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
-				borderWidth: '5px',
-				borderStyle: 'solid',
-				overviewRulerColor: 'blue',
-				overviewRulerLane: vscode.OverviewRulerLane.Right,
-				light: {
-					// this color will be used in light color themes
-					borderColor: 'darkblue' //should create this color based on event.user (uuid)
-				},
-				dark: {
-					// this color will be used in dark color themes
-					borderColor: 'lightblue' //should create this color based on event.user (uuid)
-				}
-			});
-			console.log("debug 14");
-
-			let m = MAPPINGS.get_by_buffer(event.buffer);
-			if (m === null) return;
-			m.editor.setDecorations(smallNumberDecorationType, [decorationRange]);
+			if (event.user === undefined) {
+				console.log("Skipping cursor without user not found", event)
+				continue;
+			}
+			let mapp = mapping.colors_cache.get(event.user)
+			if (mapp === undefined) { // first time we see this user
+				mapp = new mapping.UserDecoration(event);
+				mapping.colors_cache.set(event.user, mapp);
+			}
+			let editor = mapping.bufferMapper.by_buffer(event.buffer);
+			if (editor !== undefined) {
+				mapp.apply(editor, event);
+			}
 		}
 	});
 
 
-	vscode.window.onDidChangeTextEditorSelection((event: vscode.TextEditorSelectionChangeEvent) => {
+	vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
 		let selection: vscode.Selection = event.selections[0] // TODO there may be more than one cursor!!
 		let anchor: [number, number] = [selection.anchor.line, selection.anchor.character];
 		let position: [number, number] = [selection.active.line, selection.active.character + 1];
-		let n = MAPPINGS.get_by_editor(buf)
-		if (n === null) return;
+		let buffer = mapping.bufferMapper.by_editor(buf)
+		if (buffer === undefined) return;
 		let cursor: codemp.Cursor = {
 			startRow: selection.anchor.line,
 			startCol: selection.anchor.character,
 			endRow: selection.active.line,
 			endCol: selection.active.character + 1,
-			buffer: n.buffer.get_name(),
-			user: username
+			buffer: buffer,
+			user: undefined,
 		}
-		console.log("Crashing?")
-		controller.send(cursor);
+		console.log("Sending Cursor");
+		await controller.send(cursor);
+		console.log("Cursor sent");
 	});
-	console.log("workspace id \n");
-	console.log(workspace.id());
 	vscode.window.showInformationMessage(`Connected to workspace @[${workspace}]`);
 }
 
@@ -106,9 +89,7 @@ export async function attach() {
 	console.log("attached to buffer", buffer_name);
 	console.log("buffer", buffer);
 	let editor = vscode.window.activeTextEditor;
-	console.log("debug 1");
 	if (editor === undefined) {
-		console.log("debug 2");
 		let fileUri = buffer_name;
 		let random = (Math.random() + 1).toString(36).substring(2);
 		const fileName = '' + random;
@@ -122,19 +103,15 @@ export async function attach() {
 		//vscode.window.showInformationMessage(`Open a file first`);	
 		//return;
 	}
-	console.log("debug 3");
 	editor = vscode.window.activeTextEditor!;
-	console.log("debug 4");
 	//console.log("Buffer = ", buffer, "\n");
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
-	MAPPINGS.put(new mapping.BufferMapping(buffer, editor));
-	console.log("debug 5");
+	mapping.bufferMapper.register(buffer.get_name(), editor);
 	let bufferContent = await buffer.content(); //Temp fix for content not being applied when attached
-	console.log("Crashed after content ")
-	
-	
+
+
 	let range = new vscode.Range(
 		editor.document.positionAt(0),
 		editor.document.positionAt(0)
@@ -144,26 +121,27 @@ export async function attach() {
 		editBuilder
 			.replace(range, bufferContent)
 	});
-
-	vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
+	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
+		if(mine) { return }
 		console.log("debug 6");
-		if (event.document.uri != file_uri) return; // ?
+		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
 			let tmp = CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)
 			console.log("CACHE DUMPP", tmp);
 			if (tmp) continue; // Remove TMP is for debug
 			console.log("debug 7");
 			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			buffer.send({
+			console.log("Sending buffer event");
+			await buffer.send({
 				start: change.rangeOffset,
 				end: change.rangeOffset + change.rangeLength,
 				content: change.text
 			});
 			console.log("debug 8");
+			console.log("Buffer event sent");
 		}
 	});
-
-	buffer.callback(async function (controller: codemp.BufferController) {
+	buffer.callback(async (controller: codemp.BufferController) => {
 		while (true) {
 			console.log("debug 9");
 			let event = await controller.try_recv();
@@ -177,10 +155,13 @@ export async function attach() {
 				editor.document.positionAt(event.start),
 				editor.document.positionAt(event.end)
 			)
-			editor.edit(editBuilder => {
+			mine = true
+			//Study more on this maybe it locks it
+			await editor.edit(editBuilder => {
 				editBuilder
 					.replace(range, event.content)
 			});
+			mine = false;
 
 		}
 	});
@@ -197,19 +178,19 @@ export async function sync() {
 	if (workspace === null) throw "join a workspace first";
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) throw "no active editor to sync";
-	let k = MAPPINGS.get_by_editor(editor.document.uri);
-	if (k === null) throw "No such buffer managed by codemp"
-	let buffer = workspace.buffer_by_name(k.buffer.get_name());
-	if (buffer == null) throw "This buffer does not exist anymore";
+	let buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
+	if (buffer_name === undefined) throw "No such buffer managed by codemp"
+	let controller = await workspace.buffer_by_name(buffer_name);
+	if (controller === null) throw "No such buffer controller"
 
-	let content = await buffer.content();
+	let content = await controller.content();
 	let doc_len = editor.document.getText().length;
 	let range = new vscode.Range(
 		editor.document.positionAt(0),
 		editor.document.positionAt(doc_len)
 	);
 
-	CACHE.put(k.buffer.get_name(), 0, content, doc_len);
+	CACHE.put(buffer_name, 0, content, doc_len);
 	editor.edit(editBuilder => editBuilder.replace(range, content));
 }
 
