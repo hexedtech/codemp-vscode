@@ -11,9 +11,13 @@ let username: string = "";
 let mine : boolean;
 
 export async function connect() {
-	let username = await vscode.window.showInputBox({ prompt: "enter username" });
-	if (username === null) throw "choose an username";
-	client = await codemp.connect("http://codemp.alemi.dev:50053", username!, "lmaodefaultpassword");
+	let config = vscode.workspace.getConfiguration('codemp-vscode');
+	let server : string = config.get("server", "http://codemp.dev:50053");
+	let username : string = config.get("username")!;
+	let password : string = config.get("password")!;
+	console.log(server,username,password);
+	client = await codemp.connect(server, username, password);
+	console.log(client);
 }
 
 
@@ -26,9 +30,7 @@ export async function join() {
 	let controller = workspace.cursor();
 	controller.callback(async function (controller: codemp.CursorController) {
 		while (true) {
-			console.log("debug 12");
 			let event = await controller.try_recv();
-			console.log("debug 13");
 			if (event === null) break;
 			if (event.user === undefined) {
 				console.log("Skipping cursor without user not found", event)
@@ -64,10 +66,10 @@ export async function join() {
 			user: undefined,
 		}
 		console.log("Sending Cursor");
-		await controller.send(cursor);
+		//await controller.send(cursor);
 		console.log("Cursor sent");
 	});
-	vscode.window.showInformationMessage(`Connected to workspace @[${workspace}]`);
+	vscode.window.showInformationMessage("Connected to workspace");
 }
 
 
@@ -123,13 +125,11 @@ export async function attach() {
 	});
 	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
 		if(mine) { return }
-		console.log("debug 6");
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
 			let tmp = CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)
 			console.log("CACHE DUMPP", tmp);
 			if (tmp) continue; // Remove TMP is for debug
-			console.log("debug 7");
 			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			console.log("Sending buffer event");
 			await buffer.send({
@@ -137,19 +137,16 @@ export async function attach() {
 				end: change.rangeOffset + change.rangeLength,
 				content: change.text
 			});
-			console.log("debug 8");
 			console.log("Buffer event sent");
 		}
 	});
 	buffer.callback(async (controller: codemp.BufferController) => {
 		while (true) {
-			console.log("debug 9");
 			let event = await controller.try_recv();
 			if (event === null) break;
 			LOGGER.info(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 			console.log(`console log buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 			CACHE.put(buffer_name, event.start, event.content, event.end);
-			console.log("debug 10");
 			if (editor === undefined) { throw "Open an editor first" }
 			let range = new vscode.Range(
 				editor.document.positionAt(event.start),
@@ -167,12 +164,6 @@ export async function attach() {
 	});
 
 }
-
-/*export async function disconnectBuffer() { TODO i should just set buffer=null 
-	let buffer : string = (await vscode.window.showInputBox({prompt: "buffer name for the file to disconnect from"}))!;
-	codemp.disconnectBuffer(buffer);
-	vscode.window.showInformationMessage(`Disconnected from codemp workspace buffer  @[${buffer}]`);
-}*/
 
 export async function sync() {
 	if (workspace === null) throw "join a workspace first";
@@ -200,17 +191,43 @@ export async function listBuffers() {
 	console.log(buffers); // improve UX
 }
 
-export async function helloWorld() {
-	vscode.window.showInformationMessage("Hello World");
+
+export async function createWorkspace(){
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace" });
+	if(workspace_id===undefined){
+		vscode.window.showInformationMessage("You didn't enter a name");
+		return;
+	}
+	await client.create_workspace(workspace_id);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {
-	//Maybe i should disconnect from every workspace and buffer ??? // TODO
+export async function listWorkspaces(){
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	let result = await client.list_workspaces(true,true);
+	console.log(result);
+}
+
+
+
+
+export async function helloWorld() {
+	vscode.window.showInformationMessage("Hello World");
 }
 
 
 export function printOpCache() {
 	console.log("CACHE\n");
 	console.log(CACHE.toString());
+}
+
+// This method is called when your extension is deactivated
+export function deactivate() {
+	//Maybe i should disconnect from every workspace and buffer ??? // TODO
 }

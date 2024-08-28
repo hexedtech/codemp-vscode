@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
 import * as codemplogic from './codemp';
 
-export let LOGGER = vscode.window.createOutputChannel("codemp", {log: true});
+export let LOGGER = vscode.window.createOutputChannel("codemp", { log: true });
 
 // extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -18,6 +18,8 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.connect', codemplogic.connect),
 		vscode.commands.registerCommand('codemp.join', codemplogic.join),
 		vscode.commands.registerCommand('codemp.attach', codemplogic.attach),
+		vscode.commands.registerCommand('codemp.createWorkspace', codemplogic.createWorkspace),
+		vscode.commands.registerCommand('codemp.listWorkspaces', codemplogic.listWorkspaces),
 		vscode.commands.registerCommand('codemp.createBuffer', codemplogic.createBuffer),
 		vscode.commands.registerCommand('codemp.listBuffers', codemplogic.listBuffers),
 		// vscode.commands.registerCommand('codemp.disconnectBuffer', codemplogic.disconnectBuffer),
