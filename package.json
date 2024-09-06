@@ -21,7 +21,7 @@
         {
           "id": "codemp-tree-container",
           "title": "codemp",
-          "icon": "resources/codemp.svg"
+          "icon": "resources/logo.svg"
         }
       ]
     },
@@ -40,14 +40,16 @@
         {
           "command": "codemp.connect",
           "when": "view == codemp-tree-view",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "C"
         }
       ],
       "view/item/context": [
         {
           "command": "codemp.join",
           "when": "view == codemp-tree-view",
-          "group": "inline"
+          "group": "inline",
+          "icon": "C"
         }
       ]
     },
