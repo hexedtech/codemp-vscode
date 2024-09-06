@@ -35,6 +35,23 @@
       ]
     },
 
+    "menus": {
+      "view/title": [
+        {
+          "command": "codemp.connect",
+          "when": "view == codemp-tree-view",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "codemp.join",
+          "when": "view == codemp-tree-view",
+          "group": "inline"
+        }
+      ]
+    },
+
     "commands": [
       {
         "command": "codemp.connect",
