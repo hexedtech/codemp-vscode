@@ -2,16 +2,17 @@ import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 
 class BufferMapper {
-	bufferToEditorMapping: Map<string, vscode.TextEditor> = new Map();
+	bufferToEditorMapping: Map<string, vscode.Uri> = new Map();
 	editorToBufferMapping: Map<vscode.Uri, string> = new Map();
 
 	public register(buffer: string, editor: vscode.TextEditor) {
-		this.bufferToEditorMapping.set(buffer, editor);
+		this.bufferToEditorMapping.set(buffer, editor.document.uri);
 		this.editorToBufferMapping.set(editor.document.uri, buffer);
 	}
 
 	public by_buffer(name: string): vscode.TextEditor | undefined {
-		return this.bufferToEditorMapping.get(name);
+		let uri = this.bufferToEditorMapping.get(name);
+		return vscode.window.visibleTextEditors.find((e) => e.document.uri == uri);
 	}
 
 	public by_editor(name: vscode.Uri): string | undefined {
