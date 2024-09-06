@@ -22,19 +22,20 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.Workspace:
 					if (workspace === null) { return [] };
 					if (element.label == workspace.id()) {
-						return [
-							new CodempTreeItem("Buffers", Type.BufferContainer),
-							new CodempTreeItem("Users", Type.UserContainer)
-						];
+						// return [
+						// 	new CodempTreeItem("Buffers", Type.BufferContainer, true),
+						// 	new CodempTreeItem("Users", Type.UserContainer, true)
+						// ];
+						return workspace.filetree().map((x) => new CodempTreeItem(x, Type.Buffer, false));
 					} else {
 						return [];
 					}
 				case Type.BufferContainer:
 					if (workspace === null) { return [] };
-					return workspace.filetree().map((x) => new CodempTreeItem(x, Type.Buffer));
+					return workspace.filetree().map((x) => new CodempTreeItem(x, Type.Buffer, false));
 				case Type.UserContainer:
 					if (workspace === null) { return [] };
-					return [new CodempTreeItem("TODO", Type.User)]; // TODO keep track of users
+					return [new CodempTreeItem("TODO", Type.User, false)]; // TODO keep track of users
 				case Type.Buffer:
 					return [];
 				case Type.User:
@@ -42,7 +43,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 			}
 		} else {
 			if(client === null)	return [];
-			return workspace_list.map((x) => new CodempTreeItem(x, Type.Workspace));
+			return workspace_list.map((x) => new CodempTreeItem(x, Type.Workspace, true));
 		}
 
 	}
@@ -50,16 +51,19 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
-	constructor(label: string | vscode.TreeItemLabel, type: Type){
-		super(label, vscode.TreeItemCollapsibleState.Expanded);
-		this.type=type;
+	constructor(label: string | vscode.TreeItemLabel, type: Type, expandable: boolean){
+		let state = expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
+		console.log(type.toString());
+		super(label, state);
+		this.type = type;
+		this.contextValue = type;
 	}
 }
 
 enum Type {
-	Workspace,
-	BufferContainer,
-	UserContainer,
-	Buffer,
-	User,
+	Workspace = "workspace",
+	BufferContainer = "container_buffer",
+	UserContainer = "container_user",
+	Buffer = "buffer",
+	User = "user",
 }
