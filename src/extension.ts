@@ -14,7 +14,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// register commands: the commandId parameter must match the command field in package.json
 	for (let cmd of [
-		vscode.commands.registerCommand('codemp.helloWorld', codemplogic.helloWorld),
 		vscode.commands.registerCommand('codemp.connect', codemplogic.connect),
 		vscode.commands.registerCommand('codemp.join', codemplogic.join),
 		vscode.commands.registerCommand('codemp.attach', codemplogic.attach),
@@ -22,9 +21,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.listWorkspaces', codemplogic.listWorkspaces),
 		vscode.commands.registerCommand('codemp.createBuffer', codemplogic.createBuffer),
 		vscode.commands.registerCommand('codemp.listBuffers', codemplogic.listBuffers),
-		// vscode.commands.registerCommand('codemp.disconnectBuffer', codemplogic.disconnectBuffer),
 		vscode.commands.registerCommand('codemp.sync', codemplogic.sync),
-		vscode.commands.registerCommand('codemp.printOpCache', codemplogic.printOpCache)
 	]) {
 		context.subscriptions.push(cmd);
 		console.log("registered all commands and pushed them");

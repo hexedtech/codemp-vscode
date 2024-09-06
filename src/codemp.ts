@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
+import * as codemp from '@codemp/codemp';
 import * as mapping from "./mapping";
 import { LOGGER } from './extension';
 
@@ -52,7 +52,7 @@ export async function join() {
 	vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
-		let selection: vscode.Selection = event.selections[0] // TODO there may be more than one cursor!!
+		let selection: vscode.Selection = event.selections[0]
 		let anchor: [number, number] = [selection.anchor.line, selection.anchor.character];
 		let position: [number, number] = [selection.active.line, selection.active.character + 1];
 		let buffer = mapping.bufferMapper.by_editor(buf)
@@ -65,9 +65,7 @@ export async function join() {
 			buffer: buffer,
 			user: undefined,
 		}
-		console.log("Sending Cursor");
-		//await controller.send(cursor);
-		console.log("Cursor sent");
+		await controller.send(cursor);
 	});
 	vscode.window.showInformationMessage("Connected to workspace");
 }
@@ -95,23 +93,16 @@ export async function attach() {
 		let fileUri = buffer_name;
 		let random = (Math.random() + 1).toString(36).substring(2);
 		const fileName = '' + random;
-		//const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: fileName });
-
-		//Create a document not a file so it's temp and it doesn't get saved
 		const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: "" });
-		//vscode.workspace.openTextDocument()
 		await vscode.workspace.openTextDocument(newFileUri);
-		vscode.commands.executeCommand('vscode.open', newFileUri); //It should already be opened with the api command above idk why i do this?
-		//vscode.window.showInformationMessage(`Open a file first`);	
-		//return;
+		vscode.commands.executeCommand('vscode.open', newFileUri);
 	}
 	editor = vscode.window.activeTextEditor!;
-	//console.log("Buffer = ", buffer, "\n");
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_name(), editor);
-	let bufferContent = await buffer.content(); //Temp fix for content not being applied when attached
+	let bufferContent = await buffer.content();
 
 
 	let range = new vscode.Range(
@@ -127,9 +118,7 @@ export async function attach() {
 		if(mine) { return }
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
-			let tmp = CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)
-			console.log("CACHE DUMPP", tmp);
-			if (tmp) continue; // Remove TMP is for debug
+			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
 			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			console.log("Sending buffer event");
 			await buffer.send({
@@ -153,7 +142,6 @@ export async function attach() {
 				editor.document.positionAt(event.end)
 			)
 			mine = true
-			//Study more on this maybe it locks it
 			await editor.edit(editBuilder => {
 				editBuilder
 					.replace(range, event.content)
@@ -216,16 +204,6 @@ export async function listWorkspaces(){
 
 
 
-
-export async function helloWorld() {
-	vscode.window.showInformationMessage("Hello World");
-}
-
-
-export function printOpCache() {
-	console.log("CACHE\n");
-	console.log(CACHE.toString());
-}
 
 // This method is called when your extension is deactivated
 export function deactivate() {
