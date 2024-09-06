@@ -25,6 +25,12 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "codemp-tree-view",
+        "contents": "[codemp](https://codemp.dev) -- code multiplexer\n[Connect](command:codemp.connect)"
+      } 
+    ],
     
     "views": {
       "codemp-tree-container": [

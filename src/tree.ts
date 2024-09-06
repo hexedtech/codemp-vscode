@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as codemp from 'codemp';
 import { client, workspace, workspace_list } from './commands';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
@@ -20,9 +19,6 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 	async getChildren(element?: CodempTreeItem): Promise<CodempTreeItem[]> {
 		if (element) {
 			switch (element.type) {
-				case Type.Root:
-					if (client === null) { return [] };
-					return workspace_list.map((x) => new CodempTreeItem(x, Type.Workspace));
 				case Type.Workspace:
 					if (workspace === null) { return [] };
 					if (element.label == workspace.id()) {
@@ -45,14 +41,8 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					return [];
 			}
 		} else {
-			if(client === null) {
-				return [
-					new CodempTreeItem("Connect", Type.Root)
-				];
-			}
-			return [
-				new CodempTreeItem("Codemp", Type.Root)
-			];
+			if(client === null)	return [];
+			return workspace_list.map((x) => new CodempTreeItem(x, Type.Workspace));
 		}
 
 	}
@@ -66,8 +56,7 @@ class CodempTreeItem extends vscode.TreeItem {
 	}
 }
 
-enum Type{
-	Root,
+enum Type {
 	Workspace,
 	BufferContainer,
 	UserContainer,
