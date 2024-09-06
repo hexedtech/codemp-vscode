@@ -10,7 +10,19 @@ as well as a remote virtual workspace for you and your team.
 This is the reference codemp [vscode](https://code.visualstudio.com/) plugin maintained by [hexedtech](https://hexed.technology)
 
 # installation
-Clone the github repository and use vscode actions to compile and run the extension 
+> [!WARNING]
+> As of now we only provide a x64 linux preview build
+
+Beta builds are not available on VSCode marketplace and must be installed directly via `.vsix`.
+
+Grab the current codemp build for your platform under [last release's assets](https://github.com/hexedtech/codemp-vscode/releases).
+
+Install it directly in VSCode:
+ * open the "Extensions" tab on the side menu
+ * press the three dots to "view more actions" in the panel header
+ * select "Install from VSIX..." and load downloaded file
+
+Done! Configure your credentials in settings (search for "codemp") and start with `connect` command!
 
 # usage
 Interact with this plugin using the `codemp` command.
