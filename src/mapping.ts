@@ -44,12 +44,9 @@ export class UserDecoration {
 			this.decoration.dispose();
 		}
 		this.decoration = vscode.window.createTextEditorDecorationType({
-			borderWidth: '5px',
+			borderWidth: '1px',
 			borderStyle: 'solid',
-			overviewRulerColor: 'blue',
-			overviewRulerLane: vscode.OverviewRulerLane.Right,
-			light: { borderColor: this.color },
-			dark: { borderColor: this.color },
+			borderColor: this.color,
 		});
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
