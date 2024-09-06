@@ -33,7 +33,7 @@ export class UserDecoration {
 
 
 	public constructor(event: codemp.Cursor) {
-		let hash = codemp.hash(event.user!);
+		let hash = codemp.hash(event.user || "anon");
 		this.color = colors[hash % colors.length];
 		this.decoration = null;
 	}

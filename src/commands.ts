@@ -32,11 +32,19 @@ export async function connect() {
 }
 
 
-export async function join() {
-	let workspace_id = await vscode.window.showInputBox({ prompt: "workspace to attach (default to default)" });
-	if (workspace_id === undefined) return  // user cancelled with ESC
-	if (workspace_id.length == 0) workspace_id = "diamond"
+export async function join(selected: vscode.TreeItem | undefined) {
 	if (client === null) throw "connect first";
+	let workspace_id: string | undefined;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof(selected.label) === 'string') {
+			workspace_id = selected.label;
+		} else {
+			workspace_id = selected.label.label; // TODO ughh what is this api?
+		}
+	} else {
+		workspace_id = await vscode.window.showInputBox({ prompt: "name of workspace to attach to" });
+	}
+	if (!workspace_id) return;  // user cancelled with ESC
 	workspace = await client.join_workspace(workspace_id)
 	let controller = workspace.cursor();
 	controller.callback(async function (controller: codemp.CursorController) {
@@ -82,7 +90,7 @@ export async function join() {
 
 
 export async function createBuffer() {
-	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }))!;
+	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
 	if (workspace === null) throw "join a workspace first"
 	workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
@@ -90,21 +98,30 @@ export async function createBuffer() {
 }
 
 
-export async function attach() {
-	let buffer_name: any = (await vscode.window.showInputBox({ prompt: "buffer to attach to" }))!;
+export async function attach(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) throw "join a workspace first"
+	let buffer_name: string | undefined;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof(selected.label) === 'string') {
+			buffer_name = selected.label;
+		} else {
+			buffer_name = selected.label.label; // TODO ughh what is this api?
+		}
+	} else {
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+	}
+	if (!buffer_name) return; // action cancelled by user
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
 	LOGGER.info(`attached to buffer ${buffer_name}`);
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) {
-		let fileUri = buffer_name;
 		let random = (Math.random() + 1).toString(36).substring(2);
 		const fileName = '' + random;
 		const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: "" });
 		await vscode.workspace.openTextDocument(newFileUri);
 		vscode.commands.executeCommand('vscode.open', newFileUri);
+		editor = vscode.window.activeTextEditor!;
 	}
-	editor = vscode.window.activeTextEditor!;
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
@@ -155,15 +172,28 @@ export async function attach() {
 
 		}
 	});
+	provider.refresh();
 }
 
-export async function sync() {
+export async function sync(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) throw "join a workspace first";
-	let editor = vscode.window.activeTextEditor;
-	if (editor === undefined) throw "no active editor to sync";
-	let buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
-	if (buffer_name === undefined) throw "No such buffer managed by codemp"
-	let controller = await workspace.buffer_by_name(buffer_name);
+	let editor;
+	let buffer_name;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof(selected.label) === 'string') {
+			buffer_name = selected.label;
+		} else {
+			buffer_name = selected.label.label; // TODO ughh what is this api?
+		}
+		editor = mapping.bufferMapper.by_buffer(buffer_name);
+		if (editor === undefined) throw "no active editor to sync";
+	} else {
+		editor = vscode.window.activeTextEditor;
+		if (editor === undefined) throw "no active editor to sync";
+		buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
+		if (buffer_name === undefined) throw "No such buffer managed by codemp"
+	}
+	let controller = workspace.buffer_by_name(buffer_name);
 	if (controller === null) throw "No such buffer controller"
 
 	let content = await controller.content();
@@ -185,7 +215,7 @@ export async function listBuffers() {
 }
 
 
-export async function createWorkspace(){
+export async function createWorkspace() {
 	if(client===null){
 		vscode.window.showInformationMessage("Connect first");
 		return;
@@ -199,7 +229,7 @@ export async function createWorkspace(){
 	provider.refresh();
 }
 
-export async function listWorkspaces(){
+export async function listWorkspaces() {
 	if(client===null){
 		vscode.window.showInformationMessage("Connect first");
 		return;

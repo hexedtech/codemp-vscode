@@ -28,7 +28,7 @@
     "viewsWelcome": [
       {
         "view": "codemp-tree-view",
-        "contents": "[codemp](https://codemp.dev) -- code multiplexer\n[Connect](command:codemp.connect)"
+        "contents": "codemp -- [code multiplexer](https://codemp.dev)\n[Connect](command:codemp.connect)"
       } 
     ],
     
@@ -44,7 +44,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "codemp.connect",
+          "command": "codemp.listWorkspaces",
           "when": "view == codemp-tree-view",
           "group": "navigation",
           "icon": "C"
@@ -53,12 +53,17 @@
       "view/item/context": [
         {
           "command": "codemp.join",
-          "when": "view == codemp-tree-view && viewItem.type == Workspace",
+          "when": "view == codemp-tree-view && viewItem == workspace",
           "group": "inline"
         },
         {
           "command": "codemp.attach",
-          "when": "view == codemp-tree-view && viewItem.type == Buffer",
+          "when": "view == codemp-tree-view && viewItem == buffer",
+          "group": "inline"
+        },
+        {
+          "command": "codemp.sync",
+          "when": "view == codemp-tree-view && viewItem == buffer_active",
           "group": "inline"
         }
       ]
@@ -69,49 +74,49 @@
         "command": "codemp.connect",
         "title": "Connect",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(debug-disconnect)"
       },
       {
         "command": "codemp.join",
         "title": "Join",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(testing-skipped-icon)"
       },
       {
         "command": "codemp.attach",
         "title": "Attach",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(ports-view-icon)"
       },
       {
         "command": "codemp.createWorkspace",
         "title": "Create Workspace",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(diff-insert)"
       },
       {
         "command": "codemp.listWorkspaces",
         "title": "List Workspaces",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(extensions-view-icon)"
       },
       {
         "command": "codemp.listBuffers",
         "title": "List Buffers",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(output-view-icon)"
       },
       {
         "command": "codemp.createBuffer",
         "title": "Create Buffer",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(diff-insert)"
       },
       {
         "command": "codemp.disconnectBuffer",
         "title": "Disconnect Buffer",
         "category": "codemp",
-        "icon": "$(extensions-refresh)"
+        "icon": "$(testing-cancel-icon)"
       },
       {
         "command": "codemp.sync",

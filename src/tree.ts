@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { client, workspace, workspace_list } from './commands';
+import { bufferMapper } from './mapping';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
 
@@ -26,13 +27,17 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 						// 	new CodempTreeItem("Buffers", Type.BufferContainer, true),
 						// 	new CodempTreeItem("Users", Type.UserContainer, true)
 						// ];
-						return workspace.filetree().map((x) => new CodempTreeItem(x, Type.Buffer, false));
+						return workspace.filetree().map((x) =>
+							new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
+						);
 					} else {
 						return [];
 					}
 				case Type.BufferContainer:
 					if (workspace === null) { return [] };
-					return workspace.filetree().map((x) => new CodempTreeItem(x, Type.Buffer, false));
+					return workspace.filetree().map((x) =>
+						new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
+					);
 				case Type.UserContainer:
 					if (workspace === null) { return [] };
 					return [new CodempTreeItem("TODO", Type.User, false)]; // TODO keep track of users
@@ -43,20 +48,24 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 			}
 		} else {
 			if(client === null)	return [];
-			return workspace_list.map((x) => new CodempTreeItem(x, Type.Workspace, true));
+			return workspace_list.map((x) =>
+				new CodempTreeItem(x, Type.Workspace, true, workspace !== null && workspace.id() == x)
+			);
 		}
-
 	}
 }
 
 class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
-	constructor(label: string | vscode.TreeItemLabel, type: Type, expandable: boolean){
+	constructor(label: string | vscode.TreeItemLabel, type: Type, expandable: boolean, active?: boolean){
 		let state = expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
 		console.log(type.toString());
 		super(label, state);
 		this.type = type;
 		this.contextValue = type;
+		if (active) this.contextValue += "_active";
+		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(active ? "timeline-pin" : "extensions-remote");
+		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(active ? "debug-restart-frame" : "debug-console-clear-all");
 	}
 }
 
