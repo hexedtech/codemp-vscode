@@ -53,9 +53,13 @@
       "view/item/context": [
         {
           "command": "codemp.join",
-          "when": "view == codemp-tree-view",
-          "group": "inline",
-          "icon": "C"
+          "when": "view == codemp-tree-view && viewItem.type == Workspace",
+          "group": "inline"
+        },
+        {
+          "command": "codemp.attach",
+          "when": "view == codemp-tree-view && viewItem.type == Buffer",
+          "group": "inline"
         }
       ]
     },
@@ -63,39 +67,57 @@
     "commands": [
       {
         "command": "codemp.connect",
-        "title": "Connect to a codemp host"
+        "title": "Connect",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.join",
-        "title": "Join a codemp Workspace if you are allowed"
+        "title": "Join",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.attach",
-        "title": "Attach to a codemp buffer"
+        "title": "Attach",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.createWorkspace",
-        "title": "Create a new Workspace if you are allowed"
+        "title": "Create Workspace",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.listWorkspaces",
-        "title": "List all Workspaces you can join"
+        "title": "List Workspaces",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.listBuffers",
-        "title": "List all buffers of joined Workspace"
+        "title": "List Buffers",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.createBuffer",
-        "title": "Create a codemp buffer"
+        "title": "Create Buffer",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.disconnectBuffer",
-        "title": "disconnect from a codemp Buffer (unused)"
+        "title": "Disconnect Buffer",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       },
       {
         "command": "codemp.sync",
-        "title": "Sync the current buffer"
+        "title": "Sync",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
       }
     ],
     "configuration": {
