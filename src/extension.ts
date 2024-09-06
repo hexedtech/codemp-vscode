@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as commands from './commands';
+import { CodempTreeProvider } from './tree';
+
+export let provider = new CodempTreeProvider();
 
 export let LOGGER = vscode.window.createOutputChannel("codemp", { log: true });
 
@@ -8,6 +11,8 @@ export let LOGGER = vscode.window.createOutputChannel("codemp", { log: true });
 export function activate(context: vscode.ExtensionContext) {
 	// start codemp log poller
 	log_poller_task(new codemp.JsLogger()); // don't await it! run it in background forever
+	let sub = vscode.window.registerTreeDataProvider('codemp-tree-view', provider);
+	context.subscriptions.push(sub);
 
 	// register commands: the commandId parameter must match the command field in package.json
 	for (let cmd of [

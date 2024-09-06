@@ -1,13 +1,16 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "./mapping";
-import { LOGGER } from './extension';
+import { LOGGER, provider } from './extension';
 
 
-let CACHE = new codemp.OpCache();
-let client: codemp.Client | null = null;
-let workspace: codemp.Workspace | null = null;
-let mine : boolean;
+// TODO this "global state" should probably live elsewher but we need lo update it from these commands
+export let client: codemp.Client | null = null;
+export let workspace: codemp.Workspace | null = null;
+export let workspace_list: string[] = [];
+
+let CACHE = new codemp.OpCache(); // TODO do we still need this after "mine" flag?
+
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -22,8 +25,10 @@ export async function connect() {
 	if (!password) {
 		return vscode.window.showErrorMessage("missing password in settings: configure it first!");
 	}
-
+	vscode.window.showInformationMessage("Connected to codemp");
 	client = await codemp.connect(server, username, password);
+	provider.refresh();
+	listWorkspaces(); // dont await, run in background
 }
 
 
@@ -72,6 +77,7 @@ export async function join() {
 		await controller.send(cursor);
 	});
 	vscode.window.showInformationMessage("Connected to workspace");
+	provider.refresh();
 }
 
 
@@ -80,6 +86,7 @@ export async function createBuffer() {
 	if (workspace === null) throw "join a workspace first"
 	workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
+	provider.refresh();
 }
 
 
@@ -114,6 +121,7 @@ export async function attach() {
 		editBuilder
 			.replace(range, bufferContent)
 	});
+	let mine = false; // this toggles off send callback while we're updating the buffer TODO does it work? is it reliable?
 	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
 		if(mine) { return }
 		if (event.document.uri !== file_uri) return; // ?
@@ -147,7 +155,6 @@ export async function attach() {
 
 		}
 	});
-
 }
 
 export async function sync() {
@@ -173,7 +180,8 @@ export async function sync() {
 export async function listBuffers() {
 	if (workspace === null) throw "join a workspace first"
 	let buffers = workspace.filetree();
-	vscode.window.showInformationMessage(buffers.join("\n"))
+	vscode.window.showInformationMessage(buffers.join("\n"));
+	provider.refresh();
 }
 
 
@@ -188,6 +196,7 @@ export async function createWorkspace(){
 		return;
 	}
 	await client.create_workspace(workspace_id);
+	provider.refresh();
 }
 
 export async function listWorkspaces(){
@@ -195,8 +204,8 @@ export async function listWorkspaces(){
 		vscode.window.showInformationMessage("Connect first");
 		return;
 	}
-	let result = await client.list_workspaces(true, true);
-	vscode.window.showInformationMessage(result.join("\n"))
+	workspace_list = await client.list_workspaces(true, true);
+	provider.refresh();
 }
 
 

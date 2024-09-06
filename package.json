@@ -16,6 +16,25 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codemp-tree-container",
+          "title": "codemp",
+          "icon": "resources/codemp.svg"
+        }
+      ]
+    },
+    
+    "views": {
+      "codemp-tree-container": [
+        {
+          "id": "codemp-tree-view",
+          "name": "tree"
+        }
+      ]
+    },
+
     "commands": [
       {
         "command": "codemp.connect",
