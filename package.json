@@ -52,14 +52,6 @@
       {
         "command": "codemp.sync",
         "title": "Sync the current buffer"
-      },
-      {
-        "command": "codemp.printOpCache",
-        "title": "Print current OpCache"
-      },
-      {
-        "command": "codemp.helloWorld",
-        "title": "Hello World (debug)"
       }
     ],
     "configuration": {
