@@ -112,6 +112,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	}
 	if (!buffer_name) return; // action cancelled by user
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
+	await buffer.poll(); // wait for server changes
 	LOGGER.info(`attached to buffer ${buffer_name}`);
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) {
@@ -125,15 +126,14 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
-	mapping.bufferMapper.register(buffer.get_path(), editor);
+	mapping.bufferMapper.register(buffer.get_path(), file_uri);
 	let bufferContent = await buffer.content();
-
 
 	let range = new vscode.Range(
 		editor.document.positionAt(0),
-		editor.document.positionAt(0)
+		editor.document.positionAt(bufferContent.length)
 	);
-	CACHE.put(buffer_name, 0, bufferContent, 0)
+	CACHE.put(buffer_name, 0, bufferContent, bufferContent.length)
 	editor.edit(editBuilder => {
 		editBuilder
 			.replace(range, bufferContent)
@@ -158,6 +158,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			if (event === null) break;
 			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 			CACHE.put(buffer_name, event.start, event.content, event.end);
+			let editor = mapping.bufferMapper.by_buffer(buffer_name);
 			if (editor === undefined) { throw "Open an editor first" }
 			let range = new vscode.Range(
 				editor.document.positionAt(event.start),

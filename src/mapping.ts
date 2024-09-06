@@ -5,9 +5,9 @@ class BufferMapper {
 	bufferToEditorMapping: Map<string, vscode.Uri> = new Map();
 	editorToBufferMapping: Map<vscode.Uri, string> = new Map();
 
-	public register(buffer: string, editor: vscode.TextEditor) {
-		this.bufferToEditorMapping.set(buffer, editor.document.uri);
-		this.editorToBufferMapping.set(editor.document.uri, buffer);
+	public register(buffer: string, uri: vscode.Uri) {
+		this.bufferToEditorMapping.set(buffer, uri);
+		this.editorToBufferMapping.set(uri, buffer);
 	}
 
 	public by_buffer(name: string): vscode.TextEditor | undefined {
