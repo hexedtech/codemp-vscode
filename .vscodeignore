@@ -3,13 +3,10 @@
 src/**
 .gitignore
 .yarnrc
-vsc-extension-quickstart.md
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules/
-target/
-build.rs
-Cargo.lock
-Cargo.toml
+node_modules
+!node_modules/codemp
+!node_modules/codemp-linux-x64-gnu
