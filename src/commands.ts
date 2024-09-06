@@ -92,7 +92,7 @@ export async function attach() {
 	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
-	mapping.bufferMapper.register(buffer.get_name(), editor);
+	mapping.bufferMapper.register(buffer.get_path(), editor);
 	let bufferContent = await buffer.content();
 
 
