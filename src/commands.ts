@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as codemp from '@codemp/codemp';
+import * as codemp from 'codemp';
 import * as mapping from "./mapping";
 import { LOGGER } from './extension';
 
@@ -7,7 +7,6 @@ import { LOGGER } from './extension';
 let CACHE = new codemp.OpCache();
 let client: codemp.Client | null = null;
 let workspace: codemp.Workspace | null = null;
-let username: string = "";
 let mine : boolean;
 
 export async function connect() {
@@ -15,9 +14,7 @@ export async function connect() {
 	let server : string = config.get("server", "http://codemp.dev:50053");
 	let username : string = config.get("username")!;
 	let password : string = config.get("password")!;
-	console.log(server,username,password);
 	client = await codemp.connect(server, username, password);
-	console.log(client);
 }
 
 
@@ -33,7 +30,7 @@ export async function join() {
 			let event = await controller.try_recv();
 			if (event === null) break;
 			if (event.user === undefined) {
-				console.log("Skipping cursor without user not found", event)
+				LOGGER.warn(`Skipping cursor event without user: ${event}`)
 				continue;
 			}
 			let mapp = mapping.colors_cache.get(event.user)
@@ -53,8 +50,6 @@ export async function join() {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
 		let selection: vscode.Selection = event.selections[0]
-		let anchor: [number, number] = [selection.anchor.line, selection.anchor.character];
-		let position: [number, number] = [selection.active.line, selection.active.character + 1];
 		let buffer = mapping.bufferMapper.by_editor(buf)
 		if (buffer === undefined) return;
 		let cursor: codemp.Cursor = {
@@ -75,19 +70,15 @@ export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }))!;
 	if (workspace === null) throw "join a workspace first"
 	workspace.create(bufferName);
-	console.log("new buffer created ", bufferName, "\n");
+	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 }
-
-
-
 
 
 export async function attach() {
 	let buffer_name: any = (await vscode.window.showInputBox({ prompt: "buffer to attach to" }))!;
 	if (workspace === null) throw "join a workspace first"
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
-	console.log("attached to buffer", buffer_name);
-	console.log("buffer", buffer);
+	LOGGER.info(`attached to buffer ${buffer_name}`);
 	let editor = vscode.window.activeTextEditor;
 	if (editor === undefined) {
 		let fileUri = buffer_name;
@@ -119,22 +110,19 @@ export async function attach() {
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
 			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
-			LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			console.log("Sending buffer event");
+			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
 				start: change.rangeOffset,
 				end: change.rangeOffset + change.rangeLength,
 				content: change.text
 			});
-			console.log("Buffer event sent");
 		}
 	});
 	buffer.callback(async (controller: codemp.BufferController) => {
 		while (true) {
 			let event = await controller.try_recv();
 			if (event === null) break;
-			LOGGER.info(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
-			console.log(`console log buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
+			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 			CACHE.put(buffer_name, event.start, event.content, event.end);
 			if (editor === undefined) { throw "Open an editor first" }
 			let range = new vscode.Range(
@@ -176,7 +164,7 @@ export async function sync() {
 export async function listBuffers() {
 	if (workspace === null) throw "join a workspace first"
 	let buffers = workspace.filetree();
-	console.log(buffers); // improve UX
+	vscode.window.showInformationMessage(buffers.join("\n"))
 }
 
 
@@ -198,11 +186,9 @@ export async function listWorkspaces(){
 		vscode.window.showInformationMessage("Connect first");
 		return;
 	}
-	let result = await client.list_workspaces(true,true);
-	console.log(result);
+	let result = await client.list_workspaces(true, true);
+	vscode.window.showInformationMessage(result.join("\n"))
 }
-
-
 
 
 // This method is called when your extension is deactivated

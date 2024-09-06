@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as codemp from '@codemp/codemp'; // TODO why won't it work with a custom name???
+import * as codemp from 'codemp';
 
 class BufferMapper {
 	bufferToEditorMapping: Map<string, vscode.TextEditor> = new Map();
