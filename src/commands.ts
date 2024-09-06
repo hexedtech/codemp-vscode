@@ -10,10 +10,19 @@ let workspace: codemp.Workspace | null = null;
 let mine : boolean;
 
 export async function connect() {
-	let config = vscode.workspace.getConfiguration('codemp-vscode');
-	let server : string = config.get("server", "http://codemp.dev:50053");
-	let username : string = config.get("username")!;
-	let password : string = config.get("password")!;
+	let config = vscode.workspace.getConfiguration('codemp');
+	let server = config.get<string>("server", "http://codemp.dev:50053");
+
+	let username = config.get<string>("username");
+	if (!username) {
+		return vscode.window.showErrorMessage("missing username in settings: configure it first!");
+	}
+
+	let password = config.get<string>("password");
+	if (!password) {
+		return vscode.window.showErrorMessage("missing password in settings: configure it first!");
+	}
+
 	client = await codemp.connect(server, username, password);
 }
 

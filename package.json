@@ -62,25 +62,23 @@
         "title": "Hello World (debug)"
       }
     ],
-    "contributes": {
-      "configuration": {
-        "title": "codemp",
-        "properties": {
-          "typescript.server": {
-            "type": "string",
-            "default": "http://codemp.dev:50053",
-            "description": "Server address to connect to"
-          },
-          "typescript.username": {
-            "type": "string",
-            "default": "mail@example.net",
-            "description": "Username to use for login (the email you used during registration)"
-          },
-          "typescript.password": {
-            "type": "string",
-            "default": "dont-use-this-password",
-            "description": "Password to use for login"
-          }
+    "configuration": {
+      "title": "codemp",
+      "properties": {
+        "codemp.server": {
+          "type": "string",
+          "default": "http://codemp.dev:50053",
+          "description": "Server address to connect to"
+        },
+        "codemp.username": {
+          "type": "string",
+          "default": "",
+          "description": "Username to use for login (the email you used during registration)"
+        },
+        "codemp.password": {
+          "type": "string",
+          "default": "",
+          "description": "Password to use for login"
         }
       }
     }
@@ -102,6 +100,7 @@
     "@typescript-eslint/eslint-plugin": "^6.4.1",
     "@typescript-eslint/parser": "^6.4.1",
     "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^3.1.0",
     "eslint": "^8.47.0",
     "glob": "^10.3.3",
     "mocha": "^10.2.0",
@@ -109,7 +108,6 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "codemp": "^0.0.5",
-    "vsce": "^2.15.0"
+    "codemp": "^0.0.5"
   }
 }
