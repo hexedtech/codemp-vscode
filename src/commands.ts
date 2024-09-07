@@ -12,7 +12,7 @@ let locks : Map<string, boolean> = new Map();
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
-	let server = config.get<string>("server", "http://codemp.dev:50053");
+	let server = config.get<string>("server", "http://code.mp:50053");
 
 	let username = config.get<string>("username");
 	if (!username) {

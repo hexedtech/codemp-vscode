@@ -1,4 +1,4 @@
-[![codemp](https://codemp.dev/static/banner.png)](https://codemp.dev)
+[![codemp](https://code.mp/static/banner.png)](https://code.mp)
 
 > `codemp` is a **collaborative** text editing solution to work remotely.
 
@@ -61,7 +61,7 @@ after a workspace is joined, more commands become available:
 
 ```
     "codemp-vscode": {
-        "server" : "http://codemp.dev:50053",
+        "server" : "http://code.mp:50053",
         "username" : "test@codemp.dev",
         "password" : "test"
 

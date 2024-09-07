@@ -28,7 +28,7 @@
     "viewsWelcome": [
       {
         "view": "codemp-tree-view",
-        "contents": "codemp -- [code multiplexer](https://codemp.dev)\n[Connect](command:codemp.connect)"
+        "contents": "codemp -- [code multiplexer](https://code.mp)\n[Connect](command:codemp.connect)"
       } 
     ],
     
@@ -130,7 +130,7 @@
       "properties": {
         "codemp.server": {
           "type": "string",
-          "default": "http://codemp.dev:50053",
+          "default": "http://code.mp:50053",
           "description": "Server address to connect to"
         },
         "codemp.username": {
