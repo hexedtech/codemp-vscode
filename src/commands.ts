@@ -8,9 +8,7 @@ import { LOGGER, provider } from './extension';
 export let client: codemp.Client | null = null;
 export let workspace: codemp.Workspace | null = null;
 export let workspace_list: string[] = [];
-
-let CACHE = new codemp.OpCache(); // TODO do we still need this after "mine" flag?
-
+let locks : Map<string, boolean> = new Map();
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -128,22 +126,20 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_path(), file_uri);
 	let bufferContent = await buffer.content();
+	let doc_len = editor.document.getText().length;
 
 	let range = new vscode.Range(
 		editor.document.positionAt(0),
-		editor.document.positionAt(bufferContent.length)
+		editor.document.positionAt(doc_len)
 	);
-	CACHE.put(buffer_name, 0, bufferContent, bufferContent.length)
-	editor.edit(editBuilder => {
+	await editor.edit(editBuilder => {
 		editBuilder
 			.replace(range, bufferContent)
 	});
-	let mine = false; // this toggles off send callback while we're updating the buffer TODO does it work? is it reliable?
 	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
-		if(mine) { return }
+		if (locks.get(buffer_name)) { return }
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
-			if (CACHE.get(buffer_name, change.rangeOffset, change.text, change.rangeOffset + change.rangeLength)) continue;
 			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
 				start: change.rangeOffset,
@@ -157,19 +153,18 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			let event = await controller.try_recv();
 			if (event === null) break;
 			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
-			CACHE.put(buffer_name, event.start, event.content, event.end);
 			let editor = mapping.bufferMapper.by_buffer(buffer_name);
 			if (editor === undefined) { throw "Open an editor first" }
 			let range = new vscode.Range(
 				editor.document.positionAt(event.start),
 				editor.document.positionAt(event.end)
 			)
-			mine = true
+			locks.set(buffer_name, true);
 			await editor.edit(editBuilder => {
 				editBuilder
 					.replace(range, event.content)
 			});
-			mine = false;
+			locks.set(buffer_name, false);
 
 		}
 	});
@@ -204,8 +199,9 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		editor.document.positionAt(doc_len)
 	);
 
-	CACHE.put(buffer_name, 0, content, doc_len);
-	editor.edit(editBuilder => editBuilder.replace(range, content));
+	locks.set(buffer_name, true);
+	await editor.edit(editBuilder => editBuilder.replace(range, content));
+	locks.set(buffer_name, false);
 }
 
 export async function listBuffers() {
