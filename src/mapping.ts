@@ -47,6 +47,7 @@ export class UserDecoration {
 			borderWidth: '1px',
 			borderStyle: 'solid',
 			borderColor: this.color,
+			backgroundColor: this.color + '44', // add alpha
 		});
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
