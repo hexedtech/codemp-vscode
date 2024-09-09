@@ -4,7 +4,7 @@
   "description": "VSCode codemp plugin -- code multiplexer",
   "repository": "https://github.com/hexedtech/codemp-vscode",
   "publisher": "codemp",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "engines": {
     "vscode": "^1.81.0"
   },
@@ -95,16 +95,28 @@
         "icon": "$(diff-insert)"
       },
       {
+        "command": "codemp.inviteWorkspace",
+        "title": "Invite in Workspace",
+        "category": "codemp",
+        "icon": "$(arrow-up)"
+      },
+      {
         "command": "codemp.listWorkspaces",
         "title": "List Workspaces",
         "category": "codemp",
         "icon": "$(extensions-view-icon)"
       },
       {
-        "command": "codemp.listBuffers",
-        "title": "List Buffers",
+        "command": "codemp.activeWorkspaces",
+        "title": "Active Workspaces",
         "category": "codemp",
-        "icon": "$(output-view-icon)"
+        "icon": "$(extensions-view-icon)"
+      },
+      {
+        "command": "codemp.leaveWorkspace",
+        "title": "Leave Workspace",
+        "category": "codemp",
+        "icon": "$(arrow-down)"
       },
       {
         "command": "codemp.createBuffer",
@@ -113,14 +125,20 @@
         "icon": "$(diff-insert)"
       },
       {
-        "command": "codemp.disconnectBuffer",
-        "title": "Disconnect Buffer",
+        "command": "codemp.listBuffers",
+        "title": "List Buffers",
         "category": "codemp",
-        "icon": "$(testing-cancel-icon)"
+        "icon": "$(output-view-icon)"
       },
       {
         "command": "codemp.sync",
         "title": "Sync",
+        "category": "codemp",
+        "icon": "$(extensions-refresh)"
+      },
+      {
+        "command": "codemp.refresh",
+        "title": "Refresh",
         "category": "codemp",
         "icon": "$(extensions-refresh)"
       }
@@ -130,7 +148,7 @@
       "properties": {
         "codemp.server": {
           "type": "string",
-          "default": "http://code.mp:50053",
+          "default": "http://codemp.dev:50053",
           "description": "Server address to connect to"
         },
         "codemp.username": {

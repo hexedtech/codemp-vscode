@@ -223,6 +223,27 @@ export async function createWorkspace() {
 		return;
 	}
 	await client.create_workspace(workspace_id);
+	vscode.window.showInformationMessage("Created new workspace " + workspace_id);
+	provider.refresh();
+}
+
+export async function inviteToWorkspace() {
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name of the workspace you want to invite the user into" });
+	if(workspace_id===undefined){
+		vscode.window.showInformationMessage("You didn't enter a name");
+		return;
+	}
+	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
+	if(user_id===undefined){
+		vscode.window.showInformationMessage("You didn't enter a name");
+		return;
+	}
+	await client.invite_to_workspace(workspace_id,user_id);
+	vscode.window.showInformationMessage("Invited " + user_id + "into workspace " + workspace_id);
 	provider.refresh();
 }
 
@@ -232,6 +253,40 @@ export async function listWorkspaces() {
 		return;
 	}
 	workspace_list = await client.list_workspaces(true, true);
+	provider.refresh();
+}
+
+export async function leaveWorkspace() {
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace you want to leave" });
+	if(workspace_id===undefined){
+		vscode.window.showInformationMessage("You didn't enter a name");
+		return;
+	}
+	await client.leave_workspace(workspace_id);
+	vscode.window.showInformationMessage("Left workspace " + workspace_id);
+	provider.refresh();
+}
+
+export async function activeWorkspaces() {
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	workspace_list = await client.active_workspaces();
+	provider.refresh();
+}
+
+export async function refresh() {
+	if(client===null){
+		vscode.window.showInformationMessage("Connect first");
+		return;
+	}
+	await client.refresh();
+	vscode.window.showInformationMessage("Refreshed Session token");
 	provider.refresh();
 }
 

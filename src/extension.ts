@@ -20,10 +20,14 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.join', commands.join),
 		vscode.commands.registerCommand('codemp.attach', commands.attach),
 		vscode.commands.registerCommand('codemp.createWorkspace', commands.createWorkspace),
+		vscode.commands.registerCommand('codemp.inviteWorkspace', commands.inviteToWorkspace),
 		vscode.commands.registerCommand('codemp.listWorkspaces', commands.listWorkspaces),
+		vscode.commands.registerCommand('codemp.activeWorkspaces', commands.activeWorkspaces),
+		vscode.commands.registerCommand('codemp.leaveWorkspace', commands.leaveWorkspace),
 		vscode.commands.registerCommand('codemp.createBuffer', commands.createBuffer),
 		vscode.commands.registerCommand('codemp.listBuffers', commands.listBuffers),
 		vscode.commands.registerCommand('codemp.sync', commands.sync),
+		vscode.commands.registerCommand('codemp.refresh', commands.refresh),
 	]) {
 		context.subscriptions.push(cmd);
 	}
