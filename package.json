@@ -1,14 +1,31 @@
 {
   "name": "codemp",
   "displayName": "codemp",
-  "description": "VSCode codemp plugin -- code multiplexer",
+  "description": "code multiplexer",
+  "icon": "resources/logo.png",
+  "homepage": "https://code.mp",
   "repository": "https://github.com/hexedtech/codemp-vscode",
-  "publisher": "codemp",
-  "version": "0.0.5",
+  "publisher": "hexedtech",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.81.0"
   },
+  "galleryBanner": {
+    "color": "#201F29",
+    "theme": "dark"
+  },
+  "keywords": [
+    "codemp",
+    "collaborative",
+    "editing",
+    "multiplatform",
+    "live",
+    "development"
+  ],
   "categories": [
+    "SCM Providers",
+    "Visualization",
+    "Programming Languages",
     "Other"
   ],
   "activationEvents": [
@@ -96,7 +113,7 @@
       },
       {
         "command": "codemp.inviteWorkspace",
-        "title": "Invite in Workspace",
+        "title": "Invite to Workspace",
         "category": "codemp",
         "icon": "$(arrow-up)"
       },
