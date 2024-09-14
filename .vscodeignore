@@ -9,4 +9,4 @@ src/**
 **/*.ts
 node_modules
 !node_modules/codemp
-!node_modules/codemp-linux-x64-gnu
+!node_modules/codemp-*
