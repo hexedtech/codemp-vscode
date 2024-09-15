@@ -122,16 +122,19 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
 	await buffer.poll(); // wait for server changes
 	LOGGER.info(`attached to buffer ${buffer_name}`);
-	let editor = vscode.window.activeTextEditor;
-	if (editor === undefined) {
-		let random = (Math.random() + 1).toString(36).substring(2);
-		const fileName = '' + random;
-		const newFileUri = vscode.Uri.file(fileName).with({ scheme: 'untitled', path: "" });
-		await vscode.workspace.openTextDocument(newFileUri);
-		vscode.commands.executeCommand('vscode.open', newFileUri);
-		editor = vscode.window.activeTextEditor!;
+	if (vscode.workspace.workspaceFolders === undefined) {
+		throw "no active vscode workspace";
 	}
-	vscode.window.showInformationMessage(`Connected to codemp workspace buffer  @[${buffer_name}]`);
+	let cwd = vscode.workspace.workspaceFolders[0].uri; // TODO picking the first one is a bit arbitrary
+	let path = vscode.Uri.file(cwd.path + '/' + buffer_name);
+	try {
+		await vscode.workspace.fs.stat(path);
+	} catch {
+		path = path.with({ scheme: 'untitled' });
+	}
+	let doc = await vscode.workspace.openTextDocument(path);
+	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
+	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_path(), file_uri);
