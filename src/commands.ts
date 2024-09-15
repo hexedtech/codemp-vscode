@@ -75,7 +75,6 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		}
 	});
 
-
 	vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
@@ -102,6 +101,85 @@ export async function createBuffer() {
 	if (workspace === null) throw "join a workspace first"
 	workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
+	provider.refresh();
+}
+
+export async function share(selected: vscode.TreeItem | undefined) {
+	if (workspace === null) throw "join a workspace first"
+	let buffer_name: string | undefined;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof(selected.label) === 'string') {
+			buffer_name = selected.label;
+		} else {
+			buffer_name = selected.label.label; // TODO ughh what is this api?
+		}
+	} else if (vscode.window.activeTextEditor !== null) {
+		buffer_name = vscode.window.activeTextEditor?.document.uri.toString();
+	} else {
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+	}
+	if (!buffer_name) return; // action cancelled by user
+	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
+	await buffer.poll(); // wait for server changes
+	LOGGER.info(`attached to buffer ${buffer_name}`);
+	if (vscode.workspace.workspaceFolders === undefined) {
+		throw "no active vscode workspace";
+	}
+	let cwd = vscode.workspace.workspaceFolders[0].uri; // TODO picking the first one is a bit arbitrary
+	let path = vscode.Uri.file(cwd.path + '/' + buffer_name);
+	try {
+		await vscode.workspace.fs.stat(path);
+	} catch {
+		path = path.with({ scheme: 'untitled' });
+	}
+	let doc = await vscode.workspace.openTextDocument(path);
+	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
+	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
+
+	let file_uri: vscode.Uri = editor.document.uri;
+	mapping.bufferMapper.register(buffer.get_path(), file_uri);
+	let bufferContent = await buffer.content();
+	let doc_text = editor.document.getText();
+
+	if (doc_text != bufferContent) {
+		await buffer.send({
+			start: 0, end: bufferContent.length,
+			content: doc_text,
+		});
+	}
+
+	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
+		if (locks.get(buffer_name)) { return }
+		if (event.document.uri !== file_uri) return; // ?
+		for (let change of event.contentChanges) {
+			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
+			await buffer.send({
+				start: change.rangeOffset,
+				end: change.rangeOffset + change.rangeLength,
+				content: change.text
+			});
+		}
+	});
+	buffer.callback(async (controller: codemp.BufferController) => {
+		while (true) {
+			let event = await controller.try_recv();
+			if (event === null) break;
+			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
+			let editor = mapping.bufferMapper.by_buffer(buffer_name);
+			if (editor === undefined) { throw "Open an editor first" }
+			let range = new vscode.Range(
+				editor.document.positionAt(event.start),
+				editor.document.positionAt(event.end)
+			)
+			locks.set(buffer_name, true);
+			await editor.edit(editBuilder => {
+				editBuilder
+					.replace(range, event.content)
+			});
+			locks.set(buffer_name, false);
+
+		}
+	});
 	provider.refresh();
 }
 

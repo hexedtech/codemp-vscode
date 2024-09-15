@@ -106,6 +106,12 @@
         "icon": "$(ports-view-icon)"
       },
       {
+        "command": "codemp.share",
+        "title": "Share",
+        "category": "codemp",
+        "icon": "$(ports-view-icon)"
+      },
+      {
         "command": "codemp.createWorkspace",
         "title": "Create Workspace",
         "category": "codemp",
