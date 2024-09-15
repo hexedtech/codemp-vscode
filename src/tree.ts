@@ -27,7 +27,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 						// 	new CodempTreeItem("Buffers", Type.BufferContainer, true),
 						// 	new CodempTreeItem("Users", Type.UserContainer, true)
 						// ];
-						return workspace.filetree().map((x) =>
+						return workspace.filetree(undefined, false).map((x) =>
 							new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
 						);
 					} else {
@@ -35,7 +35,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					}
 				case Type.BufferContainer:
 					if (workspace === null) { return [] };
-					return workspace.filetree().map((x) =>
+					return workspace.filetree(undefined, false).map((x) =>
 						new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
 					);
 				case Type.UserContainer:

@@ -12,7 +12,6 @@ let locks : Map<string, boolean> = new Map();
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
-	let server = config.get<string>("server", "http://code.mp:50053");
 
 	let username = config.get<string>("username");
 	if (!username) {
@@ -23,10 +22,21 @@ export async function connect() {
 	if (!password) {
 		return vscode.window.showErrorMessage("missing password in settings: configure it first!");
 	}
-	vscode.window.showInformationMessage("Connected to codemp");
-	client = await codemp.connect(server, username, password);
-	provider.refresh();
-	listWorkspaces(); // dont await, run in background
+
+	try {
+		client = await codemp.connect({
+			username: username,
+			password: password,
+			host: config.get<string>("server"),
+			port: config.get<number>("port"),
+			tls: config.get<boolean>("tls"),
+		});
+		vscode.window.showInformationMessage("Connected to codemp");
+		provider.refresh();
+		listWorkspaces(); // dont await, run in background
+	} catch (e) {
+		vscode.window.showErrorMessage("could not connect: " + e);
+	}
 }
 
 
@@ -206,7 +216,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 
 export async function listBuffers() {
 	if (workspace === null) throw "join a workspace first"
-	let buffers = workspace.filetree();
+	let buffers = workspace.filetree(undefined, false);
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
 }

@@ -19,6 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.connect', commands.connect),
 		vscode.commands.registerCommand('codemp.join', commands.join),
 		vscode.commands.registerCommand('codemp.attach', commands.attach),
+		vscode.commands.registerCommand('codemp.share', commands.share),
 		vscode.commands.registerCommand('codemp.createWorkspace', commands.createWorkspace),
 		vscode.commands.registerCommand('codemp.inviteWorkspace', commands.inviteToWorkspace),
 		vscode.commands.registerCommand('codemp.listWorkspaces', commands.listWorkspaces),
