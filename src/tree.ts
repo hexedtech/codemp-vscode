@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { client, workspace, workspace_list } from './commands';
-import { bufferMapper } from './mapping';
+import { bufferMapper, colors_cache } from './mapping';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
 
@@ -23,34 +23,35 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.Workspace:
 					if (workspace === null) { return [] };
 					if (element.label == workspace.id()) {
-						// return [
-						// 	new CodempTreeItem("Buffers", Type.BufferContainer, true),
-						// 	new CodempTreeItem("Users", Type.UserContainer, true)
-						// ];
 						return workspace.filetree(undefined, false).map((x) =>
 							new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
 						);
 					} else {
 						return [];
 					}
-				case Type.BufferContainer:
-					if (workspace === null) { return [] };
-					return workspace.filetree(undefined, false).map((x) =>
-						new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
-					);
-				case Type.UserContainer:
-					if (workspace === null) { return [] };
-					return [new CodempTreeItem("TODO", Type.User, false)]; // TODO keep track of users
+				
+				case Type.UserList:
+					let out = [];
+					for (let x of colors_cache.keys()){
+						out.push(new CodempTreeItem(x, Type.User, false));
+					};
+					return out;
 				case Type.Buffer:
 					return [];
 				case Type.User:
 					return [];
 			}
+			return [];
 		} else {
-			if(client === null)	return [];
-			return workspace_list.map((x) =>
+			if(client === null) {
+				return [];
+			}
+			let items = workspace_list.map((x) =>
 				new CodempTreeItem(x, Type.Workspace, true, workspace !== null && workspace.id() == x)
 			);
+			items.push(new CodempTreeItem("", Type.Placeholder, false));
+			items.push(new CodempTreeItem("<Users>", Type.UserList, true));
+			return items;
 		}
 	}
 }
@@ -71,8 +72,8 @@ class CodempTreeItem extends vscode.TreeItem {
 
 enum Type {
 	Workspace = "workspace",
-	BufferContainer = "container_buffer",
-	UserContainer = "container_user",
+	UserList = "user_list",
 	Buffer = "buffer",
 	User = "user",
+	Placeholder = "placeholder"
 }
