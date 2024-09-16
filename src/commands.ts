@@ -239,7 +239,10 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			});
 		}
 	});
+	let consuming = false;
 	buffer.callback(async (controller: codemp.BufferController) => {
+		if (consuming) return;
+		consuming = true;
 		while (true) {
 			let event = await controller.try_recv();
 			if (event === null) break;
@@ -258,6 +261,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			locks.set(buffer_name, false);
 
 		}
+		consuming = false;
 	});
 	provider.refresh();
 }
