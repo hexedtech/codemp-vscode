@@ -122,9 +122,6 @@ export async function share(selected: vscode.TreeItem | undefined) {
 	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
 		return vscode.window.showWarningMessage("buffer already attached");
 	}
-	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
-	await buffer.poll(); // wait for server changes
-	LOGGER.info(`attached to buffer ${buffer_name}`);
 	if (vscode.workspace.workspaceFolders === undefined) {
 		throw "no active vscode workspace";
 	}
@@ -137,8 +134,18 @@ export async function share(selected: vscode.TreeItem | undefined) {
 	}
 	let doc = await vscode.workspace.openTextDocument(path);
 	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
-	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
+	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
+	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
+	//wait for server changes
+	// TODO poll never unblocks
+	let done = false;
+	buffer.poll().then(() => done = true);
+	for(let i=0; i< 20; i++){
+		if(done) break;
+		await new Promise(r => setTimeout(r,100))
+	}
 
+	LOGGER.info(`attached to buffer ${buffer_name}`);
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_path(), file_uri);
 	let bufferContent = await buffer.content();
@@ -203,9 +210,6 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
 		return vscode.window.showWarningMessage("buffer already attached");
 	}
-	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
-	await buffer.poll(); // wait for server changes
-	LOGGER.info(`attached to buffer ${buffer_name}`);
 	if (vscode.workspace.workspaceFolders === undefined) {
 		throw "no active vscode workspace";
 	}
@@ -218,7 +222,19 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	}
 	let doc = await vscode.workspace.openTextDocument(path);
 	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
+	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
+	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
 	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
+	//wait for server changes
+	// TODO poll never unblocks
+	let done = false;
+	buffer.poll().then(() => done = true);
+	for(let i=0; i< 20; i++){
+		if(done) break;
+		await new Promise(r => setTimeout(r,100))
+	}
+
+	LOGGER.info(`attached to buffer ${buffer_name}`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_path(), file_uri);
@@ -395,4 +411,5 @@ export async function refresh() {
 // This method is called when your extension is deactivated
 export function deactivate() {
 	//Maybe i should disconnect from every workspace and buffer ??? // TODO
+	// TODO
 }
