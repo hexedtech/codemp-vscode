@@ -190,6 +190,9 @@ export async function share(selected: vscode.TreeItem | undefined) {
 				editBuilder
 					.replace(range, event.content)
 			});
+			if(event.hash !== undefined){
+				if(codemp.hash(editor.document.getText()) !== event.hash) vscode.window.showWarningMessage("Client out of sync");
+			}
 			locks.set(buffer_name, false);
 
 		}
@@ -284,8 +287,10 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 				editBuilder
 					.replace(range, event.content)
 			});
+			if(event.hash !== undefined){
+				if(codemp.hash(editor.document.getText()) !== event.hash) vscode.window.showWarningMessage("Client out of sync");
+			}
 			locks.set(buffer_name, false);
-
 		}
 		consuming = false;
 	});
@@ -322,6 +327,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 
 	locks.set(buffer_name, true);
 	await editor.edit(editBuilder => editBuilder.replace(range, content));
+	
 	locks.set(buffer_name, false);
 }
 
