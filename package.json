@@ -169,11 +169,6 @@
     "configuration": {
       "title": "codemp",
       "properties": {
-        "codemp.server": {
-          "type": "string",
-          "default": "http://codemp.dev:50053",
-          "description": "Server address to connect to"
-        },
         "codemp.username": {
           "type": "string",
           "default": "",
@@ -183,6 +178,21 @@
           "type": "string",
           "default": "",
           "description": "Password to use for login"
+        },
+        "codemp.host": {
+          "type": "string",
+          "default": "code.mp",
+          "description": "Server address to connect to"
+        },
+        "codemp.port": {
+          "type": "integer",
+          "default": 50053,
+          "description": "Port used for connection"
+        },
+        "codemp.tls": {
+          "type": "boolean",
+          "default": false,
+          "description": "Wether to use TLS for connection, temporarily disabled by default"
         }
       }
     }
