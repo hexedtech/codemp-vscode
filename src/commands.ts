@@ -119,6 +119,9 @@ export async function share(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
+	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
+		return vscode.window.showWarningMessage("buffer already attached");
+	}
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
 	await buffer.poll(); // wait for server changes
 	LOGGER.info(`attached to buffer ${buffer_name}`);
@@ -197,6 +200,9 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
+	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
+		return vscode.window.showWarningMessage("buffer already attached");
+	}
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
 	await buffer.poll(); // wait for server changes
 	LOGGER.info(`attached to buffer ${buffer_name}`);
