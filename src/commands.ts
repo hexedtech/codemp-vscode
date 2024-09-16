@@ -53,6 +53,10 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		workspace_id = await vscode.window.showInputBox({ prompt: "name of workspace to attach to" });
 	}
 	if (!workspace_id) return;  // user cancelled with ESC
+	if(vscode.workspace.getWorkspaceFolder === undefined) {
+		vscode.window.showErrorMessage("Open a Workspace folder first");
+		return;
+	}
 	workspace = await client.join_workspace(workspace_id)
 	let controller = workspace.cursor();
 	controller.callback(async function (controller: codemp.CursorController) {
