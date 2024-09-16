@@ -1,4 +1,8 @@
 [![codemp](https://code.mp/static/banner.png)](https://code.mp)
+[![Actions Status](https://github.com/hexedtech/codemp-vscode/actions/workflows/test.yml/badge.svg)](https://github.com/hexedtech/codemp/actions)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/hexedtech.codemp)](https://marketplace.visualstudio.com/items?itemName=hexedtech.codemp)
+[![Visual Studio Marketplace Last Updated](https://img.shields.io/visual-studio-marketplace/last-updated/hexedtech.codemp)](https://marketplace.visualstudio.com/items?itemName=hexedtech.codemp)
+[![Gitter](https://img.shields.io/gitter/room/hexedtech/codemp)](https://gitter.im/hexedtech/codemp)
 
 > `codemp` is a **collaborative** text editing solution to work remotely.
 
@@ -10,27 +14,28 @@ as well as a remote virtual workspace for you and your team.
 This is the reference codemp [vscode](https://code.visualstudio.com/) plugin maintained by [hexedtech](https://hexed.technology)
 
 # installation
-> [!WARNING]
-> As of now we only provide a x64 linux preview build
+**Install from [Visual Studio Code Marketplace](vscode:extension/hexedtech.codemp)**
 
-Beta builds are not available on VSCode marketplace and must be installed directly via `.vsix`.
+Automatically built artifacts are available for download (to logged-in GitHub users) under [our Workflows page](https://github.com/hexedtech/codemp-vscode/actions/workflows/publish.yml).
 
-Grab the current codemp build for your platform under [last release's assets](https://github.com/hexedtech/codemp-vscode/releases).
+> [!IMPORTANT]
+> Remember to configure your credentials after installing!
 
-Install it directly in VSCode:
- * open the "Extensions" tab on the side menu
- * press the three dots to "view more actions" in the panel header
- * select "Install from VSIX..." and load downloaded file
-
-Done! Configure your credentials in settings (search for "codemp") and start with `connect` command!
+To connect to the main `code.mp` server, you [will need an account](https://code.mp/signup).
 
 # usage
-Interact with this plugin using the `codemp` command.
+To use `codemp`, you should first join a workspace. From inside, it's possible to share local files or fetch remote files, always keeping them in sync.
 
+> [!TIP]
+> Your current workspace directory is used as root for `codemp` files, which are relative paths.
+
+Most actions can be performed from the `codemp` sidebar with contextual buttons.
+
+## commands
 
 | command | description |
 | --- | --- |
-| `codemp.connect ` |  to connect to server using server ip, username and password from your config file |
+| `codemp.connect ` |  connect to remote codemp server using configured credentials |
 
 once connected, more commands become available:
 
@@ -39,32 +44,24 @@ once connected, more commands become available:
 | `codemp.join <workspace>` |  will join requested workspace; starts processing cursors and users |
 | `codemp.createWorkspace <workspace>` |  will create a new workspace with given name |
 | `codemp.listWorkspaces` |  list all workspaces available to join |
+| `codemp.activeWorkspaces` |  list all workspaces currently active |
+| `codemp.leaveWorkspace <workspace>` |  leave a currently active workspace |
+| `codemp.inviteToWorkspace <user> <workspace>` |  invite a remote user to a workspace you own |
 
 after a workspace is joined, more commands become available:
 
 | command | description |
 | --- | --- |
-| `codemp.attach <buffer>` |  will attach to requested buffer if it exists|
+| `codemp.attach <buffer>` |  will fetch remote buffer and keep it in sync |
+| `codemp.share` |  will share current buffer and keep it in sync |
 | `codemp.createBuffer <bufname>` |  will create a new empty buffer in workspace |
 | `codemp.listBuffers` |  will list all available buffers in workspace |
 | `codemp.sync` |  forces resynchronization of current buffer |
 
+some commands for the Tree View are also provided:
 
-### quick start
- * first connect to server with `codemp.connect`
- * then join a workspace with `codemp.join <workspace>`
- * either attach directly to a buffer with `codemp.attach <buffer>` or browse available buffers with `codemp.listBuffers`
-
-
-## example configuration (settings.json)
-
-
-```
-    "codemp-vscode": {
-        "server" : "http://code.mp:50053",
-        "username" : "test@codemp.dev",
-        "password" : "test"
-
-    }
-```
+| command | description |
+| --- | --- |
+| `codemp.refresh` |  redraws tree view |
+| `codemp.focus` |  focuses tree view |
 
