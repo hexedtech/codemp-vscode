@@ -63,8 +63,12 @@
         {
           "command": "codemp.listWorkspaces",
           "when": "view == codemp-tree-view",
-          "group": "navigation",
-          "icon": "C"
+          "group": "navigation"
+        },
+        {
+          "command": "codemp.share",
+          "when": "view == codemp-tree-view",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -109,7 +113,7 @@
         "command": "codemp.share",
         "title": "Share",
         "category": "codemp",
-        "icon": "$(ports-view-icon)"
+        "icon": "$(search-expand-results)"
       },
       {
         "command": "codemp.createWorkspace",
