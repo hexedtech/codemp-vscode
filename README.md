@@ -14,7 +14,7 @@ as well as a remote virtual workspace for you and your team.
 This is the reference codemp [vscode](https://code.visualstudio.com/) plugin maintained by [hexedtech](https://hexed.technology)
 
 # installation
-**Install from [Visual Studio Code Marketplace](vscode:extension/hexedtech.codemp)**
+**Install from [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hexedtech.codemp)**
 
 Automatically built artifacts are available for download (to logged-in GitHub users) under [our Workflows page](https://github.com/hexedtech/codemp-vscode/actions/workflows/publish.yml).
 
