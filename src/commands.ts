@@ -335,12 +335,12 @@ export async function listBuffers() {
 
 export async function createWorkspace() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace" });
 	if(workspace_id===undefined){
-		vscode.window.showInformationMessage("You didn't enter a name");
+		vscode.window.showWarningMessage("You didn't enter a name");
 		return;
 	}
 	await client.create_workspace(workspace_id);
@@ -350,17 +350,17 @@ export async function createWorkspace() {
 
 export async function inviteToWorkspace() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name of the workspace you want to invite the user into" });
 	if(workspace_id===undefined){
-		vscode.window.showInformationMessage("You didn't enter a name");
+		vscode.window.showWarningMessage("You didn't enter a name");
 		return;
 	}
 	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
 	if(user_id===undefined){
-		vscode.window.showInformationMessage("You didn't enter a name");
+		vscode.window.showWarningMessage("You didn't enter a name");
 		return;
 	}
 	await client.invite_to_workspace(workspace_id,user_id);
@@ -370,7 +370,7 @@ export async function inviteToWorkspace() {
 
 export async function listWorkspaces() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	workspace_list = await client.list_workspaces(true, true);
@@ -379,12 +379,12 @@ export async function listWorkspaces() {
 
 export async function leaveWorkspace() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace you want to leave" });
 	if(workspace_id===undefined){
-		vscode.window.showInformationMessage("You didn't enter a name");
+		vscode.window.showWarningMessage("You didn't enter a name");
 		return;
 	}
 	await client.leave_workspace(workspace_id);
@@ -394,7 +394,7 @@ export async function leaveWorkspace() {
 
 export async function activeWorkspaces() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	workspace_list = await client.active_workspaces();
@@ -403,7 +403,7 @@ export async function activeWorkspaces() {
 
 export async function refresh() {
 	if(client===null){
-		vscode.window.showInformationMessage("Connect first");
+		vscode.window.showWarningMessage("Connect first");
 		return;
 	}
 	await client.refresh();
