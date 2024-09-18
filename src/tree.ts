@@ -21,7 +21,16 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 		if (element) {
 			switch (element.type) {
 				case Type.Workspace:
+					if(client === null) {
+						return [];
+					}
 					if (workspace === null) { return [] };
+					let workspaces= await client.list_workspaces(true,true);
+					if(workspaces.length===0) { 
+						let out = [];
+						out.push(new CodempTreeItem("No workspaces", Type.Placeholder, false));
+						return out;
+					}
 					if (element.label == workspace.id()) {
 						return workspace.filetree(undefined, false).map((x) =>
 							new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
@@ -45,6 +54,12 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 		} else {
 			if(client === null) {
 				return [];
+			}
+			let workspaces= await client.list_workspaces(true,true);
+			if(workspaces.length===0) { 
+				let out = [];
+				out.push(new CodempTreeItem("No workspaces", Type.Placeholder, false));
+				return out;
 			}
 			let items = workspace_list.map((x) =>
 				new CodempTreeItem(x, Type.Workspace, true, workspace !== null && workspace.id() == x)
