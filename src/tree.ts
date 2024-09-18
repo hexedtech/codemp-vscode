@@ -62,7 +62,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				return out;
 			}
 			let items = workspace_list.map((x) =>
-				new CodempTreeItem(x, Type.Workspace, true, workspace !== null && workspace.id() == x)
+				new CodempTreeItem(x, Type.Workspace, true, workspace === null)
 			);
 			items.push(new CodempTreeItem("", Type.Placeholder, false));
 			items.push(new CodempTreeItem("<Users>", Type.UserList, true));

@@ -15,18 +15,18 @@
     "theme": "dark"
   },
   "keywords": [
-    "codemp",
-    "collaborative",
-    "editing",
-    "multiplatform",
-    "live",
-    "development"
+  	"codemp",
+  	"collaborative",
+  	"editing",
+  	"multiplatform",
+  	"live",
+  	"development"
   ],
   "categories": [
-    "SCM Providers",
-    "Visualization",
-    "Programming Languages",
-    "Other"
+  "SCM Providers",
+  "Visualization",
+  "Programming Languages",
+  "Other"
   ],
   "activationEvents": [
     "onCommand:extension.openMyExtension"
@@ -34,13 +34,13 @@
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "codemp-tree-container",
-          "title": "codemp",
-          "icon": "resources/logo.svg"
-        }
-      ]
+    "activitybar": [
+      {
+        "id": "codemp-tree-container",
+        "title": "codemp",
+        "icon": "resources/logo.svg"
+      }
+    ]
     },
     "viewsWelcome": [
       {
@@ -74,7 +74,7 @@
       "view/item/context": [
         {
           "command": "codemp.join",
-          "when": "view == codemp-tree-view && viewItem == workspace",
+          "when": "view == codemp-tree-view && viewItem == workspace_active",
           "group": "inline"
         },
         {
