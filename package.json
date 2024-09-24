@@ -6,7 +6,7 @@
   "homepage": "https://code.mp",
   "repository": "https://github.com/hexedtech/codemp-vscode",
   "publisher": "hexedtech",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.81.0"
   },
