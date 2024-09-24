@@ -418,6 +418,31 @@ export async function refresh() {
 	provider.refresh();
 }
 
+export async function jump(selected: vscode.TreeItem | undefined){
+	if (client === null) throw "connect first";
+	let user;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof(selected.label) === 'string') {
+			user = selected.label;
+		} else {
+			user = selected.label.label; 
+		}
+	}
+	if(user) user = user.split(' (')[0];//Label on tree also contains Buffer name along with username
+	else user = await vscode.window.showInputBox({ prompt: "username"});
+	if (!user) return;  // user cancelled with ESC
+	
+	let user_hl = mapping.colors_cache.get(user);
+	if (user_hl === undefined) return vscode.window.showWarningMessage("unknown position of such user");
+	let uri = mapping.bufferMapper.uri_by_buffer(user_hl.buffer);
+	if (uri === undefined) { 
+		return vscode.window.showWarningMessage("user is on an untracked buffer: "+ user_hl.buffer);}
+	let editor = await vscode.window.showTextDocument(uri, { preserveFocus: false });
+	let range_start: vscode.Position = new vscode.Position(user_hl.startRow, user_hl.startCol);
+	let range_end: vscode.Position = new vscode.Position(user_hl.endRow, user_hl.endCol);
+	let cursor_range = new vscode.Range(range_start, range_end);
+	editor.revealRange(cursor_range, vscode.TextEditorRevealType.InCenter);
+}
 
 // This method is called when your extension is deactivated
 export function deactivate() {

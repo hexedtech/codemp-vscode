@@ -86,6 +86,11 @@
           "command": "codemp.sync",
           "when": "view == codemp-tree-view && viewItem == buffer_active",
           "group": "inline"
+        },
+        {
+          "command": "codemp.jump",
+          "when": "view == codemp-tree-view && viewItem == user",
+          "group": "inline"
         }
       ]
     },
@@ -168,6 +173,12 @@
         "title": "Refresh",
         "category": "codemp",
         "icon": "$(extensions-refresh)"
+      },
+      {
+        "command": "codemp.jump",
+        "title": "Jump",
+        "category": "codemp",
+        "icon": "$(debug-step-into)"
       }
     ],
     "configuration": {
