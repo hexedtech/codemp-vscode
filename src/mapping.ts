@@ -10,7 +10,13 @@ class BufferMapper {
 		this.editorToBufferMapping.set(uri, buffer);
 	}
 
-	public by_buffer(name: string): vscode.TextEditor | undefined {
+
+	public uri_by_buffer(name: string): vscode.Uri | undefined {
+		let uri = this.bufferToEditorMapping.get(name);
+		return uri;
+	}
+
+	public visible_by_buffer(name: string): vscode.TextEditor | undefined {
 		let uri = this.bufferToEditorMapping.get(name);
 		return vscode.window.visibleTextEditors.find((e) => e.document.uri == uri);
 	}
@@ -35,6 +41,8 @@ export class UserDecoration {
 	buffer: string;
 	startRow : number;
 	startCol : number;
+	endRow : number;
+	endCol : number;
 
 
 	public constructor(event: codemp.Cursor) {
@@ -44,12 +52,18 @@ export class UserDecoration {
 		this.buffer = event.buffer;
 		this.startRow = event.startRow;
 		this.startCol = event.startCol;
+		this.endRow = event.endRow;
+		this.endCol = event.endCol;
 
 	}
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
 	public update(event: codemp.Cursor, editor?: vscode.TextEditor) {
 		this.buffer=event.buffer;
+		this.startRow = event.startRow;
+		this.startCol = event.startCol;
+		this.endRow = event.endRow;
+		this.endCol = event.endCol;
 		if (this.decoration == null) {
 			this.decoration = vscode.window.createTextEditorDecorationType({
 				borderWidth: '1px',
@@ -59,6 +73,7 @@ export class UserDecoration {
 				
 			});
 		}
+		
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
