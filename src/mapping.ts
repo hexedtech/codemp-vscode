@@ -24,34 +24,40 @@ class BufferMapper {
 	public static instance = new BufferMapper();
 }
 
+
+
 // TODO rename maybe? mapper.bufferMapper is a little bit overkill
 export let bufferMapper = BufferMapper.instance;
 
 export class UserDecoration {
 	decoration: vscode.TextEditorDecorationType | null;
 	color: string;
+	buffer: string;
 
 
 	public constructor(event: codemp.Cursor) {
 		let hash = codemp.hash(event.user || "anon");
 		this.color = colors[hash % colors.length];
 		this.decoration = null;
+		this.buffer = event.buffer;
 	}
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
-	public apply(editor: vscode.TextEditor, event: codemp.Cursor) {
+	public update(event: codemp.Cursor, editor?: vscode.TextEditor) {
+		this.buffer=event.buffer;
 		if (this.decoration == null) {
 			this.decoration = vscode.window.createTextEditorDecorationType({
 				borderWidth: '1px',
 				borderStyle: 'solid',
 				borderColor: this.color,
 				backgroundColor: this.color + '44', // add alpha
+				
 			});
 		}
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
-		editor.setDecorations(this.decoration, [decorationRange]);
+		if(editor !== undefined) editor.setDecorations(this.decoration, [decorationRange]);
 	}
 
 	public clear() {

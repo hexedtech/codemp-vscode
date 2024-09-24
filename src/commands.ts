@@ -67,15 +67,15 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				LOGGER.warn(`Skipping cursor event without user: ${event}`)
 				continue;
 			}
-			let mapp = mapping.colors_cache.get(event.user)
+			let mapp = mapping.colors_cache.get(event.user);
 			if (mapp === undefined) { // first time we see this user
 				mapp = new mapping.UserDecoration(event);
 				mapping.colors_cache.set(event.user, mapp);
+				provider.refresh();
 			}
 			let editor = mapping.bufferMapper.by_buffer(event.buffer);
-			if (editor !== undefined) {
-				mapp.apply(editor, event);
-			}
+			mapp.update(event,editor);
+			/*if(event.buffer!=mapp.buffer) */provider.refresh();
 		}
 	});
 
@@ -166,6 +166,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 		if (locks.get(buffer_name)) { return }
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
+			console.log(event.contentChanges);
 			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
 				start: change.rangeOffset,

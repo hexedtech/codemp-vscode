@@ -41,8 +41,13 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				
 				case Type.UserList:
 					let out = [];
-					for (let x of colors_cache.keys()){
-						out.push(new CodempTreeItem(x, Type.User, false));
+					
+					/*colors_cache.forEach(function(x){
+						out.push(new CodempTreeItem(x.color, Type.User, false));
+					});*/
+					for (let x of colors_cache){
+						
+						out.push(new CodempTreeItem(`${x[0]}(${x[1].buffer})`, Type.User, false));
 					};
 					return out;
 				case Type.Buffer:
