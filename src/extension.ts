@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as commands from './commands';
 import { CodempTreeProvider } from './tree';
+import * as mapping from './mapping';
 
 export let provider = new CodempTreeProvider();
 
@@ -10,9 +11,19 @@ export let LOGGER = vscode.window.createOutputChannel("codemp", { log: true });
 // extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 	// start codemp log poller
+
 	log_poller_task(new codemp.JsLogger()); // don't await it! run it in background forever
 	let sub = vscode.window.registerTreeDataProvider('codemp-tree-view', provider);
 	context.subscriptions.push(sub);
+
+	vscode.window.onDidChangeVisibleTextEditors(async (editors : readonly vscode.TextEditor[]) => {
+		if(commands.workspace===null) return;
+		for(let editor of editors){
+			let path = mapping.bufferMapper.by_editor(editor.document.uri);
+			if (path===undefined) continue;
+			await commands.apply_changes_to_buffer(path, undefined, true);
+		}
+	});
 
 	// register commands: the commandId parameter must match the command field in package.json
 	for (let cmd of [
@@ -29,6 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.listBuffers', commands.listBuffers),
 		vscode.commands.registerCommand('codemp.sync', commands.sync),
 		vscode.commands.registerCommand('codemp.refresh', commands.refresh),
+		vscode.commands.registerCommand('codemp.jump', commands.jump),
 	]) {
 		context.subscriptions.push(cmd);
 	}
@@ -42,3 +54,5 @@ async function log_poller_task(logger: codemp.JsLogger) {
 		console.log(message);
 	}
 }
+
+

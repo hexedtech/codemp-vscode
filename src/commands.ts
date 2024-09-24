@@ -39,7 +39,6 @@ export async function connect() {
 	}
 }
 
-
 export async function join(selected: vscode.TreeItem | undefined) {
 	if (client === null) throw "connect first";
 	let workspace_id: string | undefined;
@@ -73,9 +72,9 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				mapping.colors_cache.set(event.user, mapp);
 				provider.refresh();
 			}
-			let editor = mapping.bufferMapper.by_buffer(event.buffer);
+			let editor = mapping.bufferMapper.visible_by_buffer(event.buffer);
 			mapp.update(event,editor);
-			/*if(event.buffer!=mapp.buffer) */provider.refresh();
+			/*if(event.buffer!=mapp.buffer)*/ provider.refresh();
 		}
 	});
 
@@ -108,6 +107,38 @@ export async function createBuffer() {
 	provider.refresh();
 }
 
+export async function apply_changes_to_buffer(path: string, controller: codemp.BufferController | undefined | null, force?: boolean) {
+	if (workspace === null) throw "can't apply changes while not in a workspace";
+	if (!controller) controller = workspace.buffer_by_name(path);
+	if (!controller) return;
+	let editor = mapping.bufferMapper.visible_by_buffer(path);
+	if (editor === undefined)  return;
+
+	if (locks.get(path) && !force) return;
+	locks.set(path, true);
+	while (true) {
+		let event = await controller.try_recv();
+		if (event === null) break;
+		LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
+
+		let range = new vscode.Range(
+			editor.document.positionAt(event.start),
+			editor.document.positionAt(event.end)
+		)
+		
+		await editor.edit(editBuilder => {
+			editBuilder
+				.replace(range, event.content)
+		});
+
+		if (event.hash !== undefined) {
+			if (codemp.hash(editor.document.getText()) !== event.hash)
+				vscode.window.showErrorMessage("Client out of sync");
+		}
+	}
+	locks.set(path, false);
+}
+
 export async function share(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) throw "join a workspace first"
 	let buffer_name: string | undefined;
@@ -123,7 +154,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
-	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
+	if (mapping.bufferMapper.uri_by_buffer(buffer_name) !== undefined) { 
 		return vscode.window.showWarningMessage("buffer already attached");
 	}
 	if (vscode.workspace.workspaceFolders === undefined) {
@@ -175,29 +206,9 @@ export async function share(selected: vscode.TreeItem | undefined) {
 			});
 		}
 	});
-	buffer.callback(async (controller: codemp.BufferController) => {
-		while (true) {
-			let event = await controller.try_recv();
-			if (event === null) break;
-			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
-			let editor = mapping.bufferMapper.by_buffer(buffer_name);
-			if (editor === undefined) { throw "Open an editor first" }
-			let range = new vscode.Range(
-				editor.document.positionAt(event.start),
-				editor.document.positionAt(event.end)
-			)
-			locks.set(buffer_name, true);
-			await editor.edit(editBuilder => {
-				editBuilder
-					.replace(range, event.content)
-			});
-			if(event.hash !== undefined){
-				if(codemp.hash(editor.document.getText()) !== event.hash) vscode.window.showWarningMessage("Client out of sync");
-			}
-			locks.set(buffer_name, false);
-
-		}
-	});
+	buffer.callback(async (controller: codemp.BufferController) =>
+		await apply_changes_to_buffer(controller.get_path(), controller)
+	);
 	provider.refresh();
 }
 
@@ -215,7 +226,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
-	if (mapping.bufferMapper.by_buffer(buffer_name) !== undefined) {
+	if (mapping.bufferMapper.visible_by_buffer(buffer_name) !== undefined) {
 		return vscode.window.showWarningMessage("buffer already attached");
 	}
 	if (vscode.workspace.workspaceFolders === undefined) {
@@ -269,32 +280,11 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			});
 		}
 	});
-	let consuming = false;
-	buffer.callback(async (controller: codemp.BufferController) => {
-		if (consuming) return;
-		consuming = true;
-		while (true) {
-			let event = await controller.try_recv();
-			if (event === null) break;
-			LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
-			let editor = mapping.bufferMapper.by_buffer(buffer_name);
-			if (editor === undefined) { throw "Open an editor first" }
-			let range = new vscode.Range(
-				editor.document.positionAt(event.start),
-				editor.document.positionAt(event.end)
-			)
-			locks.set(buffer_name, true);
-			await editor.edit(editBuilder => {
-				editBuilder
-					.replace(range, event.content)
-			});
-			if(event.hash !== undefined){
-				if(codemp.hash(editor.document.getText()) !== event.hash) vscode.window.showWarningMessage("Client out of sync");
-			}
-			locks.set(buffer_name, false);
-		}
-		consuming = false;
-	});
+
+	buffer.callback(async (controller: codemp.BufferController) =>
+		await apply_changes_to_buffer(controller.get_path(), controller)
+	);
+
 	provider.refresh();
 }
 
@@ -308,7 +298,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		} else {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
-		editor = mapping.bufferMapper.by_buffer(buffer_name);
+		editor = mapping.bufferMapper.visible_by_buffer(buffer_name);
 		if (editor === undefined) throw "no active editor to sync";
 	} else {
 		editor = vscode.window.activeTextEditor;
