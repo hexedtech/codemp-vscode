@@ -70,7 +70,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				new CodempTreeItem(x, Type.Workspace, true, workspace === null)
 			);
 			items.push(new CodempTreeItem("", Type.Placeholder, false));
-			items.push(new CodempTreeItem("<Users>", Type.UserList, true));
+			items.push(new CodempTreeItem("Users", Type.UserList, true));
 			return items;
 		}
 	}
@@ -80,13 +80,14 @@ class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
 	constructor(label: string | vscode.TreeItemLabel, type: Type, expandable: boolean, active?: boolean){
 		let state = expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
-		console.log(type.toString());
 		super(label, state);
 		this.type = type;
 		this.contextValue = type;
 		if (active) this.contextValue += "_active";
 		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(active ? "timeline-pin" : "extensions-remote");
 		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(active ? "debug-restart-frame" : "debug-console-clear-all");
+		else if (type === Type.UserList ) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
+		else if (type === Type.User ) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
 	}
 }
 
