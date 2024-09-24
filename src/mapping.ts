@@ -33,13 +33,18 @@ export class UserDecoration {
 	decoration: vscode.TextEditorDecorationType | null;
 	color: string;
 	buffer: string;
+	startRow : number;
+	startCol : number;
 
 
 	public constructor(event: codemp.Cursor) {
 		let hash = codemp.hash(event.user || "anon");
-		this.color = colors[hash % colors.length];
+		this.color = colors[Math.abs(hash) % colors.length];
 		this.decoration = null;
 		this.buffer = event.buffer;
+		this.startRow = event.startRow;
+		this.startCol = event.startCol;
+
 	}
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
@@ -57,7 +62,7 @@ export class UserDecoration {
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
-		if(editor !== undefined) editor.setDecorations(this.decoration, [decorationRange]);
+		if(editor !== undefined) editor.setDecorations(this.decoration, [{range: decorationRange, hoverMessage: event.user || "anon"}]);
 	}
 
 	public clear() {
@@ -70,9 +75,13 @@ export class UserDecoration {
 
 
 const colors = [
-	"red",
-	"green",
-	"blue",
+	"#AC7EA8",
+	"#81A1C1",
+	"#EBD4A7",
+	"#2E8757",
+	"#BF616A",
+	"#8F81D4",
+	"#D69C63"
 ];
 
 export const colors_cache: Map<string, UserDecoration> = new Map();
