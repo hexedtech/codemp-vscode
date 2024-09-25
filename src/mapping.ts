@@ -10,7 +10,6 @@ class BufferMapper {
 		this.editorToBufferMapping.set(uri, buffer);
 	}
 
-
 	public uri_by_buffer(name: string): vscode.Uri | undefined {
 		let uri = this.bufferToEditorMapping.get(name);
 		return uri;
@@ -39,27 +38,25 @@ export class UserDecoration {
 	decoration: vscode.TextEditorDecorationType | null;
 	color: string;
 	buffer: string;
-	startRow : number;
+	startRow : number
 	startCol : number;
 	endRow : number;
 	endCol : number;
 
-
-	public constructor(event: codemp.Cursor) {
-		let hash = codemp.hash(event.user || "anon");
+	public constructor(name: string) {
+		let hash = codemp.hash(name);
 		this.color = colors[Math.abs(hash) % colors.length];
 		this.decoration = null;
-		this.buffer = event.buffer;
-		this.startRow = event.startRow;
-		this.startCol = event.startCol;
-		this.endRow = event.endRow;
-		this.endCol = event.endCol;
-
+		this.buffer = "";
+		this.startRow = 0;
+		this.startCol = 0;
+		this.endRow = 0;
+		this.endCol = 0;
 	}
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
 	public update(event: codemp.Cursor, editor?: vscode.TextEditor) {
-		this.buffer=event.buffer;
+		this.buffer = event.buffer;
 		this.startRow = event.startRow;
 		this.startCol = event.startCol;
 		this.endRow = event.endRow;
@@ -100,3 +97,4 @@ const colors = [
 ];
 
 export const colors_cache: Map<string, UserDecoration> = new Map();
+
