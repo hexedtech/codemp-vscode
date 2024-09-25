@@ -63,14 +63,15 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
-	constructor(label: string | vscode.TreeItemLabel, type: Type, expandable: boolean, active?: boolean){
-		let state = expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
+	constructor(label: string | vscode.TreeItemLabel, type: Type, opts: { description?: string, expandable?: boolean, active?: boolean }){
+		let state = opts.expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
 		super(label, state);
 		this.type = type;
 		this.contextValue = type;
-		if (active) this.contextValue += "_active";
-		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(active ? "timeline-pin" : "extensions-remote");
-		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(active ? "debug-restart-frame" : "debug-console-clear-all");
+		this.description = opts.description || "";
+		if (opts.active) this.contextValue += "_active";
+		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(opts.active ? "timeline-pin" : "extensions-remote");
+		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-restart-frame" : "debug-console-clear-all");
 		else if (type === Type.UserList ) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
 		else if (type === Type.User ) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
 	}

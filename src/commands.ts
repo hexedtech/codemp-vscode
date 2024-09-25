@@ -418,8 +418,7 @@ export async function jump(selected: vscode.TreeItem | undefined){
 			user = selected.label.label; 
 		}
 	}
-	if(user) user = user.split(' (')[0];//Label on tree also contains Buffer name along with username
-	else user = await vscode.window.showInputBox({ prompt: "username"});
+	if (!user) user = await vscode.window.showInputBox({ prompt: "username"});
 	if (!user) return;  // user cancelled with ESC
 	
 	let user_hl = mapping.colors_cache.get(user);
