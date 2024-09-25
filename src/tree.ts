@@ -21,56 +21,41 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 		if (element) {
 			switch (element.type) {
 				case Type.Workspace:
-					if(client === null) {
-						return [];
-					}
-					if (workspace === null) { return [] };
-					let workspaces= await client.list_workspaces(true,true);
-					if(workspaces.length===0) { 
-						let out = [];
-						out.push(new CodempTreeItem("No workspaces", Type.Placeholder, false));
-						return out;
-					}
-					if (element.label == workspace.id()) {
+					if (workspace === null) return [];
+					else if (element.label == workspace.id()) {
 						return workspace.filetree(undefined, false).map((x) =>
-							new CodempTreeItem(x, Type.Buffer, false, bufferMapper.bufferToEditorMapping.has(x))
+							new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 						);
-					} else {
-						return [];
-					}
+					} else return [];
 				
 				case Type.UserList:
 					let out = [];
-					
-					/*colors_cache.forEach(function(x){
-						out.push(new CodempTreeItem(x.color, Type.User, false));
-					});*/
 					for (let x of colors_cache){
-						
-						out.push(new CodempTreeItem(`${x[0]} (${x[1].buffer})`, Type.User, false));
+						out.push(new CodempTreeItem(x[0], Type.User, { description: x[1].buffer }));
 					};
 					return out;
+
 				case Type.Buffer:
 					return [];
+
 				case Type.User:
 					return [];
 			}
 			return [];
 		} else {
-			if(client === null) {
-				return [];
-			}
-			let workspaces= await client.list_workspaces(true,true);
-			if(workspaces.length===0) { 
-				let out = [];
-				out.push(new CodempTreeItem("No workspaces", Type.Placeholder, false));
-				return out;
+			if (client === null) {
+				return []; // empty screen with [connect] button
 			}
 			let items = workspace_list.map((x) =>
-				new CodempTreeItem(x, Type.Workspace, true, workspace === null)
+				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspace === null})
 			);
-			items.push(new CodempTreeItem("", Type.Placeholder, false));
-			items.push(new CodempTreeItem("Users", Type.UserList, true));
+			if (workspace !== null) {
+				items.push(new CodempTreeItem("", Type.Placeholder, {}));
+				items.push(new CodempTreeItem("Users", Type.UserList, { expandable: true }));
+			}
+			if (items.length == 0) { 
+				items.push(new CodempTreeItem("No workspaces", Type.Placeholder, {}));
+			}
 			return items;
 		}
 	}
