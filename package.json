@@ -178,7 +178,7 @@
         "command": "codemp.jump",
         "title": "Jump",
         "category": "codemp",
-        "icon": "$(debug-step-into)"
+        "icon": "$(debug-console-evaluation-input)"
       }
     ],
     "configuration": {
