@@ -45,6 +45,12 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 }
 
+export async function deactivate() {
+	if (commands.client && commands.workspace) {
+		await commands.client.leave_workspace(commands.workspace.id());
+	}
+}
+
 async function log_poller_task(logger: codemp.JsLogger) {
 	while (true) {
 		let message = await logger.message();

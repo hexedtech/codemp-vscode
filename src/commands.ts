@@ -396,8 +396,3 @@ export async function jump(selected: vscode.TreeItem | undefined){
 	editor.revealRange(cursor_range, vscode.TextEditorRevealType.InCenter);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {
-	//Maybe i should disconnect from every workspace and buffer ??? // TODO
-	// TODO
-}
