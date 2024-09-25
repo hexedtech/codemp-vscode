@@ -40,7 +40,7 @@ export async function connect() {
 }
 
 export async function join(selected: vscode.TreeItem | undefined) {
-	if (client === null) throw "connect first";
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof(selected.label) === 'string') {
@@ -68,7 +68,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			}
 			let mapp = mapping.colors_cache.get(event.user);
 			if (mapp === undefined) { // first time we see this user
-				mapp = new mapping.UserDecoration(event);
+				mapp = new mapping.UserDecoration(event.user);
 				mapping.colors_cache.set(event.user, mapp);
 				provider.refresh();
 			}
@@ -102,7 +102,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
-	if (workspace === null) throw "join a workspace first"
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 	provider.refresh();
@@ -141,7 +141,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 }
 
 export async function share(selected: vscode.TreeItem | undefined) {
-	if (workspace === null) throw "join a workspace first"
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof(selected.label) === 'string') {
@@ -215,7 +215,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 
 
 export async function attach(selected: vscode.TreeItem | undefined) {
-	if (workspace === null) throw "join a workspace first"
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof(selected.label) === 'string') {
@@ -290,7 +290,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 }
 
 export async function sync(selected: vscode.TreeItem | undefined) {
-	if (workspace === null) throw "join a workspace first";
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let editor;
 	let buffer_name;
 	if (selected !== undefined && selected.label !== undefined) {
@@ -324,7 +324,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 }
 
 export async function listBuffers() {
-	if (workspace === null) throw "join a workspace first"
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffers = workspace.filetree(undefined, false);
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
@@ -332,76 +332,47 @@ export async function listBuffers() {
 
 
 export async function createWorkspace() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace" });
-	if(workspace_id===undefined){
-		vscode.window.showWarningMessage("You didn't enter a name");
-		return;
-	}
+	if (workspace_id === undefined) return;
 	await client.create_workspace(workspace_id);
 	vscode.window.showInformationMessage("Created new workspace " + workspace_id);
 	provider.refresh();
 }
 
 export async function inviteToWorkspace() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name of the workspace you want to invite the user into" });
-	if(workspace_id===undefined){
-		vscode.window.showWarningMessage("You didn't enter a name");
-		return;
-	}
+	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
-	if(user_id===undefined){
-		vscode.window.showWarningMessage("You didn't enter a name");
-		return;
-	}
+	if (user_id === undefined) return;
 	await client.invite_to_workspace(workspace_id,user_id);
 	vscode.window.showInformationMessage("Invited " + user_id + "into workspace " + workspace_id);
-	provider.refresh();
 }
 
 export async function listWorkspaces() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	workspace_list = await client.list_workspaces(true, true);
 	provider.refresh();
 }
 
 export async function leaveWorkspace() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace you want to leave" });
-	if(workspace_id===undefined){
-		vscode.window.showWarningMessage("You didn't enter a name");
-		return;
-	}
+	if (workspace_id === undefined) return;
 	await client.leave_workspace(workspace_id);
 	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 	provider.refresh();
 }
 
 export async function refresh() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	await client.refresh();
 	vscode.window.showInformationMessage("Refreshed Session token");
-	provider.refresh();
 }
 
 export async function jump(selected: vscode.TreeItem | undefined){
-	if (client === null) throw "connect first";
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let user;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof(selected.label) === 'string') {
