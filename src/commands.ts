@@ -73,8 +73,9 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				provider.refresh();
 			}
 			let editor = mapping.bufferMapper.visible_by_buffer(event.buffer);
-			mapp.update(event,editor);
-			/*if(event.buffer!=mapp.buffer)*/ provider.refresh();
+			let refresh = event.buffer != mapp.buffer;
+			mapp.update(event, editor);
+			if (refresh) provider.refresh();
 		}
 	});
 
