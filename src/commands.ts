@@ -389,15 +389,6 @@ export async function leaveWorkspace() {
 	provider.refresh();
 }
 
-export async function activeWorkspaces() {
-	if(client===null){
-		vscode.window.showWarningMessage("Connect first");
-		return;
-	}
-	workspace_list = await client.active_workspaces();
-	provider.refresh();
-}
-
 export async function refresh() {
 	if(client===null){
 		vscode.window.showWarningMessage("Connect first");

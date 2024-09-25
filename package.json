@@ -139,12 +139,6 @@
         "icon": "$(extensions-view-icon)"
       },
       {
-        "command": "codemp.activeWorkspaces",
-        "title": "Active Workspaces",
-        "category": "codemp",
-        "icon": "$(extensions-view-icon)"
-      },
-      {
         "command": "codemp.leaveWorkspace",
         "title": "Leave Workspace",
         "category": "codemp",
