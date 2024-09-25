@@ -67,14 +67,19 @@ export class UserDecoration {
 				borderStyle: 'solid',
 				borderColor: this.color,
 				backgroundColor: this.color + '44', // add alpha
-				
+				overviewRulerColor: this.color,
 			});
 		}
 		
 		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
 		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
-		if(editor !== undefined) editor.setDecorations(this.decoration, [{range: decorationRange, hoverMessage: event.user || "anon"}]);
+		if (editor !== undefined) {
+			editor.setDecorations(
+				this.decoration,
+				[{ range: decorationRange, hoverMessage: new vscode.MarkdownString(`### \`${event.user}\`'s cursor`)}]
+			);
+		}
 	}
 
 	public clear() {
