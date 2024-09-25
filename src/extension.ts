@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
-import * as commands from './commands';
+import {client,connect,join,refresh,createWorkspace,inviteToWorkspace,listWorkspaces,leaveWorkspace} from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
+import {workspace,jump,listBuffers,createBuffer} from './commands/workspaces'
+import {attach,share,sync,apply_changes_to_buffer} from './commands/buffers'
 
 export let provider = new CodempTreeProvider();
 
@@ -17,37 +19,37 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(sub);
 
 	vscode.window.onDidChangeVisibleTextEditors(async (editors : readonly vscode.TextEditor[]) => {
-		if(commands.workspace===null) return;
+		if(workspace===null) return;
 		for(let editor of editors){
 			let path = mapping.bufferMapper.by_editor(editor.document.uri);
 			if (path===undefined) continue;
-			await commands.apply_changes_to_buffer(path, undefined, true);
+			await apply_changes_to_buffer(path, undefined, true);
 		}
 	});
 
 	// register commands: the commandId parameter must match the command field in package.json
 	for (let cmd of [
-		vscode.commands.registerCommand('codemp.connect', commands.connect),
-		vscode.commands.registerCommand('codemp.join', commands.join),
-		vscode.commands.registerCommand('codemp.attach', commands.attach),
-		vscode.commands.registerCommand('codemp.share', commands.share),
-		vscode.commands.registerCommand('codemp.createWorkspace', commands.createWorkspace),
-		vscode.commands.registerCommand('codemp.inviteWorkspace', commands.inviteToWorkspace),
-		vscode.commands.registerCommand('codemp.listWorkspaces', commands.listWorkspaces),
-		vscode.commands.registerCommand('codemp.leaveWorkspace', commands.leaveWorkspace),
-		vscode.commands.registerCommand('codemp.createBuffer', commands.createBuffer),
-		vscode.commands.registerCommand('codemp.listBuffers', commands.listBuffers),
-		vscode.commands.registerCommand('codemp.sync', commands.sync),
-		vscode.commands.registerCommand('codemp.refresh', commands.refresh),
-		vscode.commands.registerCommand('codemp.jump', commands.jump),
+		vscode.commands.registerCommand('codemp.connect', connect),
+		vscode.commands.registerCommand('codemp.join', join),
+		vscode.commands.registerCommand('codemp.attach', attach),
+		vscode.commands.registerCommand('codemp.share', share),
+		vscode.commands.registerCommand('codemp.createWorkspace', createWorkspace),
+		vscode.commands.registerCommand('codemp.inviteWorkspace', inviteToWorkspace),
+		vscode.commands.registerCommand('codemp.listWorkspaces', listWorkspaces),
+		vscode.commands.registerCommand('codemp.leaveWorkspace', leaveWorkspace),
+		vscode.commands.registerCommand('codemp.createBuffer', createBuffer),
+		vscode.commands.registerCommand('codemp.listBuffers', listBuffers),
+		vscode.commands.registerCommand('codemp.sync', sync),
+		vscode.commands.registerCommand('codemp.refresh', refresh),
+		vscode.commands.registerCommand('codemp.jump', jump),
 	]) {
 		context.subscriptions.push(cmd);
 	}
 }
 
 export async function deactivate() {
-	if (commands.client && commands.workspace) {
-		await commands.client.leave_workspace(commands.workspace.id());
+	if (client && workspace) {
+		await client.leave_workspace(workspace.id());
 	}
 }
 

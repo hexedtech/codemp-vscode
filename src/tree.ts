@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { client, workspace, workspace_list } from './commands';
+import { client, workspace_list } from './commands/client';
+import { workspace} from './commands/workspaces';
 import { bufferMapper, colors_cache } from './mapping';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
