@@ -231,6 +231,6 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "codemp": "^0.7.0"
+    "codemp": "^0.7.2"
   }
 }
