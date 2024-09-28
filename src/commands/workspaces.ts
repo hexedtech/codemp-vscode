@@ -44,9 +44,10 @@ export async function jump(selected: vscode.TreeItem | undefined){
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
 	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	workspace.create(bufferName);
+	await workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
-	provider.refresh();
+	listBuffers();
+	//provider.refresh();
 }
 
 export async function listBuffers() {

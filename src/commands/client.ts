@@ -143,7 +143,7 @@ export async function createWorkspace() {
 	if (workspace_id === undefined) return;
 	await client.create_workspace(workspace_id);
 	vscode.window.showInformationMessage("Created new workspace " + workspace_id);
-	provider.refresh();
+	listWorkspaces();
 }
 
 export async function inviteToWorkspace() {
