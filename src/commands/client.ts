@@ -153,7 +153,7 @@ export async function inviteToWorkspace() {
 	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
 	if (user_id === undefined) return;
 	await client.invite_to_workspace(workspace_id,user_id);
-	vscode.window.showInformationMessage("Invited " + user_id + "into workspace " + workspace_id);
+	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 
 export async function leaveWorkspace() {
