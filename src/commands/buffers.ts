@@ -7,7 +7,7 @@ import {workspace} from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
 let locks : Map<string, boolean> = new Map();
-
+let autoResync = vscode.workspace.getConfiguration('codemp').get<string>("autoResync");
 
 
 export async function apply_changes_to_buffer(path: string, controller: codemp.BufferController | undefined | null, force?: boolean) {
@@ -36,7 +36,8 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 
 		if (event.hash !== undefined) {
 			if (codemp.hash(editor.document.getText()) !== event.hash)
-				vscode.window.showErrorMessage("Client out of sync");
+				if(autoResync) await resync(path,workspace,editor);
+				else vscode.window.showErrorMessage("Client out of sync");
 		}
 	}
 	locks.set(path, false);
@@ -209,6 +210,11 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
 		if (buffer_name === undefined) throw "No such buffer managed by codemp"
 	}
+	resync(buffer_name,workspace,editor);
+}
+
+export async function resync(buffer_name : string, workspace : codemp.Workspace, editor : vscode.TextEditor){
+
 	let controller = workspace.buffer_by_name(buffer_name);
 	if (controller === null) throw "No such buffer controller"
 
@@ -221,6 +227,6 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 
 	locks.set(buffer_name, true);
 	await editor.edit(editBuilder => editBuilder.replace(range, content));
-	
 	locks.set(buffer_name, false);
+
 }
