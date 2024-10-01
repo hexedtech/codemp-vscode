@@ -1,11 +1,8 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import {workspace,setWorkspace} from "./workspaces";
+import { workspace, setWorkspace } from "./workspaces";
 import { LOGGER, provider } from '../extension';
-
-
-
 
 
 // TODO this "global state" should probably live elsewher but we need lo update it from these commands
@@ -45,7 +42,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof(selected.label) === 'string') {
+		if (typeof (selected.label) === 'string') {
 			workspace_id = selected.label;
 		} else {
 			workspace_id = selected.label.label; // TODO ughh what is this api?
@@ -54,14 +51,14 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		workspace_id = await vscode.window.showInputBox({ prompt: "name of workspace to attach to" });
 	}
 	if (!workspace_id) return;  // user cancelled with ESC
-	if(vscode.workspace.workspaceFolders === undefined) {
+	if (vscode.workspace.workspaceFolders === undefined) {
 		vscode.window.showErrorMessage("Open a Workspace folder first");
 		return;
 	}
 	setWorkspace(await client.join_workspace(workspace_id));
-	if(!workspace) return;
+	if (!workspace) return;
 	let controller = workspace.cursor();
-	controller.callback(async function (controller: codemp.CursorController) {
+	controller.callback(async function(controller: codemp.CursorController) {
 		while (true) {
 			let event = await controller.try_recv();
 			if (event === null) break;
@@ -152,7 +149,7 @@ export async function inviteToWorkspace() {
 	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
 	if (user_id === undefined) return;
-	await client.invite_to_workspace(workspace_id,user_id);
+	await client.invite_to_workspace(workspace_id, user_id);
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 

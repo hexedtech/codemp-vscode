@@ -2,11 +2,10 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import {client} from "./client"
-import {workspace} from "./workspaces";
+import { workspace } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
-let locks : Map<string, boolean> = new Map();
+let locks: Map<string, boolean> = new Map();
 let autoResync = vscode.workspace.getConfiguration('codemp').get<string>("autoResync");
 
 
@@ -15,7 +14,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 	if (!controller) controller = workspace.buffer_by_name(path);
 	if (!controller) return;
 	let editor = mapping.bufferMapper.visible_by_buffer(path);
-	if (editor === undefined)  return;
+	if (editor === undefined) return;
 
 	if (locks.get(path) && !force) return;
 	locks.set(path, true);
@@ -28,7 +27,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 			editor.document.positionAt(event.start),
 			editor.document.positionAt(event.end)
 		)
-		
+
 		await editor.edit(editBuilder => {
 			editBuilder
 				.replace(range, event.content)
@@ -36,7 +35,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 
 		if (event.hash !== undefined) {
 			if (codemp.hash(editor.document.getText()) !== event.hash)
-				if(autoResync) await resync(path,workspace,editor);
+				if (autoResync) await resync(path, workspace, editor);
 				else vscode.window.showErrorMessage("Client out of sync");
 		}
 	}
@@ -47,7 +46,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof(selected.label) === 'string') {
+		if (typeof (selected.label) === 'string') {
 			buffer_name = selected.label;
 		} else {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
@@ -78,9 +77,9 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	// TODO poll never unblocks
 	let done = false;
 	buffer.poll().then(() => done = true);
-	for(let i=0; i< 20; i++){
-		if(done) break;
-		await new Promise(r => setTimeout(r,100))
+	for (let i = 0; i < 20; i++) {
+		if (done) break;
+		await new Promise(r => setTimeout(r, 100))
 	}
 
 	LOGGER.info(`attached to buffer ${buffer_name}`);
@@ -123,7 +122,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof(selected.label) === 'string') {
+		if (typeof (selected.label) === 'string') {
 			buffer_name = selected.label;
 		} else {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
@@ -134,7 +133,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
-	if (mapping.bufferMapper.uri_by_buffer(buffer_name) !== undefined) { 
+	if (mapping.bufferMapper.uri_by_buffer(buffer_name) !== undefined) {
 		return vscode.window.showWarningMessage("buffer already attached");
 	}
 	if (vscode.workspace.workspaceFolders === undefined) {
@@ -155,9 +154,9 @@ export async function share(selected: vscode.TreeItem | undefined) {
 	// TODO poll never unblocks
 	let done = false;
 	buffer.poll().then(() => done = true);
-	for(let i=0; i< 20; i++){
-		if(done) break;
-		await new Promise(r => setTimeout(r,100))
+	for (let i = 0; i < 20; i++) {
+		if (done) break;
+		await new Promise(r => setTimeout(r, 100))
 	}
 
 	LOGGER.info(`attached to buffer ${buffer_name}`);
@@ -197,7 +196,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 	let editor;
 	let buffer_name;
 	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof(selected.label) === 'string') {
+		if (typeof (selected.label) === 'string') {
 			buffer_name = selected.label;
 		} else {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
@@ -210,10 +209,10 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
 		if (buffer_name === undefined) throw "No such buffer managed by codemp"
 	}
-	resync(buffer_name,workspace,editor);
+	resync(buffer_name, workspace, editor);
 }
 
-export async function resync(buffer_name : string, workspace : codemp.Workspace, editor : vscode.TextEditor){
+export async function resync(buffer_name: string, workspace: codemp.Workspace, editor: vscode.TextEditor) {
 
 	let controller = workspace.buffer_by_name(buffer_name);
 	if (controller === null) throw "No such buffer controller"

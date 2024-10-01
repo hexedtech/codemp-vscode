@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { client, workspace_list } from './commands/client';
-import { workspace} from './commands/workspaces';
+import { workspace } from './commands/workspaces';
 import { bufferMapper, colors_cache } from './mapping';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
 
-	constructor() {}
+	constructor() { }
 
 	private _emitter: vscode.EventEmitter<CodempTreeItem | undefined | null | void> = new vscode.EventEmitter<CodempTreeItem | undefined | null | void>();
 	readonly onDidChangeTreeData: vscode.Event<CodempTreeItem | undefined | null | void> = this._emitter.event;
@@ -28,10 +28,10 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 							new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 						);
 					} else return [];
-				
-				case Type.UserList:
+
+				case Type.UserList: // asdasd
 					let out = [];
-					for (let x of colors_cache){
+					for (let x of colors_cache) {
 						out.push(new CodempTreeItem(x[0], Type.User, { description: x[1].buffer }));
 					};
 					return out;
@@ -48,13 +48,13 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				return []; // empty screen with [connect] button
 			}
 			let items = workspace_list.map((x) =>
-				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspace === null})
+				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspace === null })
 			);
 			if (workspace !== null) {
 				items.push(new CodempTreeItem("", Type.Placeholder, {}));
 				items.push(new CodempTreeItem("Users", Type.UserList, { expandable: true }));
 			}
-			if (items.length == 0) { 
+			if (items.length == 0) {
 				items.push(new CodempTreeItem("No workspaces", Type.Placeholder, {}));
 			}
 			return items;
@@ -64,7 +64,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
-	constructor(label: string | vscode.TreeItemLabel, type: Type, opts: { description?: string, expandable?: boolean, active?: boolean }){
+	constructor(label: string | vscode.TreeItemLabel, type: Type, opts: { description?: string, expandable?: boolean, active?: boolean }) {
 		let state = opts.expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
 		super(label, state);
 		this.type = type;
@@ -73,8 +73,8 @@ class CodempTreeItem extends vscode.TreeItem {
 		if (opts.active) this.contextValue += "_active";
 		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(opts.active ? "timeline-pin" : "extensions-remote");
 		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-restart-frame" : "debug-console-clear-all");
-		else if (type === Type.UserList ) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
-		else if (type === Type.User ) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
+		else if (type === Type.UserList) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
+		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
 	}
 }
 

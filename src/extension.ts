@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
-import {client,connect,join,refresh,createWorkspace,inviteToWorkspace,listWorkspaces,leaveWorkspace} from './commands/client';
+import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leaveWorkspace } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
-import {workspace,jump,listBuffers,createBuffer} from './commands/workspaces'
-import {attach,share,sync,apply_changes_to_buffer} from './commands/buffers'
+import { workspace, jump, listBuffers, createBuffer } from './commands/workspaces'
+import { attach, share, sync, apply_changes_to_buffer } from './commands/buffers'
 
 export let provider = new CodempTreeProvider();
 
@@ -18,11 +18,11 @@ export function activate(context: vscode.ExtensionContext) {
 	let sub = vscode.window.registerTreeDataProvider('codemp-tree-view', provider);
 	context.subscriptions.push(sub);
 
-	vscode.window.onDidChangeVisibleTextEditors(async (editors : readonly vscode.TextEditor[]) => {
-		if(workspace===null) return;
-		for(let editor of editors){
+	vscode.window.onDidChangeVisibleTextEditors(async (editors: readonly vscode.TextEditor[]) => {
+		if (workspace === null) return;
+		for (let editor of editors) {
 			let path = mapping.bufferMapper.by_editor(editor.document.uri);
-			if (path===undefined) continue;
+			if (path === undefined) continue;
 			await apply_changes_to_buffer(path, undefined, true);
 		}
 	});
@@ -61,5 +61,4 @@ async function log_poller_task(logger: codemp.JsLogger) {
 		console.log(message);
 	}
 }
-
 
