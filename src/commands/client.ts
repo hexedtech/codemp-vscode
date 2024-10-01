@@ -8,6 +8,7 @@ import { LOGGER, provider } from '../extension';
 // TODO this "global state" should probably live elsewher but we need lo update it from these commands
 export let client: codemp.Client | null = null;
 export let workspace_list: string[] = [];
+export let cursor_disposable : vscode.Disposable | null;
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -61,6 +62,11 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	controller.callback(async function(controller: codemp.CursorController) {
 		while (true) {
 			let event = await controller.try_recv();
+			if (workspace === null) {
+				controller.clear_callback();
+				LOGGER.info("left workspace, stopping cursor controller");
+				return;
+			}
 			if (event === null) break;
 			if (event.user === undefined) {
 				LOGGER.warn(`Skipping cursor event without user: ${event}`)
@@ -80,7 +86,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	});
 
 	let once = true;
-	vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
+	cursor_disposable = vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
 		let selection: vscode.Selection = event.selections[0]
@@ -138,9 +144,14 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
-
-
-
+export async function leave() {
+	if (!client) throw "can't leave while disconnected";
+	if (!workspace) return vscode.window.showWarningMessage("Not in a workspace");
+	client.leave_workspace(workspace.id());
+	if (cursor_disposable !== null) cursor_disposable.dispose();
+	cursor_disposable = null;
+	setWorkspace(null);
+}
 
 
 export async function listWorkspaces() {

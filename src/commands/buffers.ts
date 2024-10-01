@@ -8,10 +8,13 @@ import { LOGGER, provider } from '../extension';
 let locks: Map<string, boolean> = new Map();
 let autoResync = vscode.workspace.getConfiguration('codemp').get<string>("autoResync");
 
-export async function apply_changes_to_buffer(path: string, controller: codemp.BufferController | undefined | null, force?: boolean) {
-	if (workspace === null) throw "can't apply changes while not in a workspace";
-	if (!controller) controller = workspace.buffer_by_name(path);
-	if (!controller) return;
+export async function apply_changes_to_buffer(path: string, controller: codemp.BufferController, force?: boolean) {
+	if (workspace === null) {
+		LOGGER.info(`left workspace, unregistering buffer controller '${path}' callback`);
+		controller.clear_callback();
+		return;
+	}
+
 	let editor = mapping.bufferMapper.visible_by_buffer(path);
 	if (editor === undefined) return;
 
@@ -88,7 +91,6 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	LOGGER.info(`attached to buffer ${buffer_name}`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
-	mapping.bufferMapper.register(buffer.get_path(), file_uri);
 	let remoteContent = await buffer.content();
 	let localContent = editor.document.getText();
 
@@ -110,7 +112,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		});
 	}
 
-	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
+	let disposable = vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
 		if (locks.get(buffer_name)) { return }
 		if (event.document.uri !== file_uri) return; // ?
 		for (let change of event.contentChanges) {
@@ -126,6 +128,8 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	buffer.callback(async (controller: codemp.BufferController) =>
 		await apply_changes_to_buffer(controller.get_path(), controller)
 	);
+
+	mapping.bufferMapper.register(buffer.get_path(), file_uri, disposable);
 
 	provider.refresh();
 }
@@ -144,6 +148,26 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	}
 	if (!buffer_name) return;
 	await attach_to_remote_buffer(buffer_name);
+}
+
+export async function detach(selected: vscode.TreeItem | undefined) {
+	if (workspace === null) return vscode.window.showWarningMessage("Not in a workspace");
+	let buffer_name: string | undefined;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof (selected.label) === 'string') {
+			buffer_name = selected.label;
+		} else {
+			buffer_name = selected.label.label; // TODO ughh what is this api?
+		}
+	} else {
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+	}
+	if (!buffer_name) return;
+	let controller = workspace.buffer_by_name(buffer_name);
+	if (controller) controller.clear_callback();
+	workspace.detach(buffer_name);
+	mapping.bufferMapper.remove(buffer_name);
+	vscode.window.showInformationMessage(`Detached from buffer ${buffer_name}`)
 }
 
 

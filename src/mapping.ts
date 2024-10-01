@@ -3,11 +3,13 @@ import * as codemp from 'codemp';
 
 class BufferMapper {
 	bufferToEditorMapping: Map<string, vscode.Uri> = new Map();
+	bufferToDisposableMapping: Map<string, vscode.Disposable> = new Map();
 	editorToBufferMapping: Map<vscode.Uri, string> = new Map();
 
-	public register(buffer: string, uri: vscode.Uri) {
+	public register(buffer: string, uri: vscode.Uri, disposable: vscode.Disposable) {
 		this.bufferToEditorMapping.set(buffer, uri);
 		this.editorToBufferMapping.set(uri, buffer);
+		this.bufferToDisposableMapping.set(buffer, disposable);
 	}
 
 	public uri_by_buffer(name: string): vscode.Uri | undefined {
@@ -22,6 +24,16 @@ class BufferMapper {
 
 	public by_editor(name: vscode.Uri): string | undefined {
 		return this.editorToBufferMapping.get(name);
+	}
+
+	public remove(name: string) {
+		let uri = this.bufferToEditorMapping.get(name);
+		let disposable = this.bufferToDisposableMapping.get(name);
+		if (disposable) disposable.dispose();
+		if (!uri) return;
+		this.bufferToEditorMapping.delete(name);
+		this.editorToBufferMapping.delete(uri);
+		this.bufferToDisposableMapping.delete(name);
 	}
 
 	private constructor() { }

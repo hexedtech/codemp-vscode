@@ -22,8 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
 		if (workspace === null) return;
 		for (let editor of editors) {
 			let path = mapping.bufferMapper.by_editor(editor.document.uri);
-			if (path === undefined) continue;
-			await apply_changes_to_buffer(path, undefined, true);
+			if (!path) continue;
+			let controller = workspace.buffer_by_name(path);
+			if (!controller) continue;
+			await apply_changes_to_buffer(path, controller, true);
 		}
 	});
 

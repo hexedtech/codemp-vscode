@@ -8,7 +8,7 @@ import { LOGGER, provider } from '../extension';
 export let workspace: codemp.Workspace | null = null;
 
 
-export function setWorkspace(ws: codemp.Workspace) {
+export function setWorkspace(ws: codemp.Workspace | null) {
 	workspace = ws;
 }
 
