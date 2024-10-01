@@ -42,25 +42,20 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 	locks.set(path, false);
 }
 
-export async function attach(selected: vscode.TreeItem | undefined) {
-	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	let buffer_name: string | undefined;
-	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof (selected.label) === 'string') {
-			buffer_name = selected.label;
-		} else {
-			buffer_name = selected.label.label; // TODO ughh what is this api?
-		}
-	} else {
-		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+export async function attach_to_remote_buffer(buffer_name: string, set_content?: boolean): Promise<codemp.BufferController | undefined> {
+	if (workspace === null) {
+		vscode.window.showErrorMessage("join a Workspace first");
+		return;
 	}
-	if (!buffer_name) return; // action cancelled by user
 	if (mapping.bufferMapper.visible_by_buffer(buffer_name) !== undefined) {
-		return vscode.window.showWarningMessage("buffer already attached");
+		vscode.window.showWarningMessage("buffer already attached");
+		return;
 	}
 	if (vscode.workspace.workspaceFolders === undefined) {
-		throw "no active vscode workspace";
+		vscode.window.showErrorMessage("no active VSCode workspace, open a folder/project first");
+		return;
 	}
+
 	let cwd = vscode.workspace.workspaceFolders[0].uri; // TODO picking the first one is a bit arbitrary
 	let path = vscode.Uri.file(cwd.path + '/' + buffer_name);
 	try {
@@ -68,13 +63,14 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	} catch {
 		path = path.with({ scheme: 'untitled' });
 	}
+
 	let doc = await vscode.workspace.openTextDocument(path);
 	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
 	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
 	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
-	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
-	//wait for server changes
-	// TODO poll never unblocks
+
+	// wait for server changes
+	// TODO poll never unblocks, so this dirty fix is necessary
 	let done = false;
 	buffer.poll().then(() => done = true);
 	for (let i = 0; i < 20; i++) {
@@ -82,21 +78,32 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 		await new Promise(r => setTimeout(r, 100))
 	}
 
+	vscode.window.showInformationMessage(`Connected to buffer '${buffer_name}'`);
 	LOGGER.info(`attached to buffer ${buffer_name}`);
 
 	let file_uri: vscode.Uri = editor.document.uri;
 	mapping.bufferMapper.register(buffer.get_path(), file_uri);
-	let bufferContent = await buffer.content();
-	let doc_len = editor.document.getText().length;
+	let remoteContent = await buffer.content();
+	let localContent = editor.document.getText();
 
-	let range = new vscode.Range(
-		editor.document.positionAt(0),
-		editor.document.positionAt(doc_len)
-	);
-	await editor.edit(editBuilder => {
-		editBuilder
-			.replace(range, bufferContent)
-	});
+	if (set_content) {
+		// make remote document match local content
+		let doc_len = remoteContent.length;
+		await buffer.send({ start: 0, end: doc_len, content: localContent});
+	} else {
+		// make local document match remote content
+		let doc_len = localContent.length;
+
+		let range = new vscode.Range(
+			editor.document.positionAt(0),
+			editor.document.positionAt(doc_len)
+		);
+		await editor.edit(editBuilder => {
+			editBuilder
+				.replace(range, remoteContent)
+		});
+	}
+
 	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
 		if (locks.get(buffer_name)) { return }
 		if (event.document.uri !== file_uri) return; // ?
@@ -117,6 +124,22 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
+export async function attach(selected: vscode.TreeItem | undefined) {
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	let buffer_name: string | undefined;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof (selected.label) === 'string') {
+			buffer_name = selected.label;
+		} else {
+			buffer_name = selected.label.label; // TODO ughh what is this api?
+		}
+	} else {
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+	}
+	if (!buffer_name) return;
+	await attach_to_remote_buffer(buffer_name);
+}
+
 
 export async function share(selected: vscode.TreeItem | undefined) {
 	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
@@ -133,62 +156,7 @@ export async function share(selected: vscode.TreeItem | undefined) {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
-	if (mapping.bufferMapper.uri_by_buffer(buffer_name) !== undefined) {
-		return vscode.window.showWarningMessage("buffer already attached");
-	}
-	if (vscode.workspace.workspaceFolders === undefined) {
-		throw "no active vscode workspace";
-	}
-	let cwd = vscode.workspace.workspaceFolders[0].uri; // TODO picking the first one is a bit arbitrary
-	let path = vscode.Uri.file(cwd.path + '/' + buffer_name);
-	try {
-		await vscode.workspace.fs.stat(path);
-	} catch {
-		path = path.with({ scheme: 'untitled' });
-	}
-	let doc = await vscode.workspace.openTextDocument(path);
-	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
-	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
-	let buffer: codemp.BufferController = await workspace.attach(buffer_name);
-	//wait for server changes
-	// TODO poll never unblocks
-	let done = false;
-	buffer.poll().then(() => done = true);
-	for (let i = 0; i < 20; i++) {
-		if (done) break;
-		await new Promise(r => setTimeout(r, 100))
-	}
-
-	LOGGER.info(`attached to buffer ${buffer_name}`);
-	let file_uri: vscode.Uri = editor.document.uri;
-	mapping.bufferMapper.register(buffer.get_path(), file_uri);
-	let bufferContent = await buffer.content();
-	let doc_text = editor.document.getText();
-
-	if (doc_text != bufferContent) {
-		await buffer.send({
-			start: 0, end: bufferContent.length,
-			content: doc_text,
-		});
-	}
-
-	vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
-		if (locks.get(buffer_name)) { return }
-		if (event.document.uri !== file_uri) return; // ?
-		for (let change of event.contentChanges) {
-			console.log(event.contentChanges);
-			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			await buffer.send({
-				start: change.rangeOffset,
-				end: change.rangeOffset + change.rangeLength,
-				content: change.text
-			});
-		}
-	});
-	buffer.callback(async (controller: codemp.BufferController) =>
-		await apply_changes_to_buffer(controller.get_path(), controller)
-	);
-	provider.refresh();
+	await attach_to_remote_buffer(buffer_name, true);
 }
 
 export async function sync(selected: vscode.TreeItem | undefined) {
