@@ -111,25 +111,29 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	});
 
 	// TODO waiting for https://github.com/hexedtech/codemp/pull/19 to reach npm
-	// let event_handler = async () => {
-	// 	try {
-	// 		while (true) {
-	// 			if (workspace === null) break;
-	// 			let event = await workspace.event();
-	// 			if (event.type == "leave") {
-	// 				mapping.colors_cache.get(event.value)?.clear()
-	// 				mapping.colors_cache.delete(event.value);
-	// 			}
-	// 			if (event.type == "join") {
-	// 				mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
-	// 			}
-	// 			provider.refresh();
-	// 		}
-	// 	} catch (e) {
-	// 		console.log(`stopping event handler for workspace: ${e}`);
-	// 	}
-	// };
-	// event_handler();
+	let event_handler = async () => {
+		try {
+			while (true) {
+				if (workspace === null) break;
+				let event = await workspace.event();
+				if (event.type == "leave") {
+					mapping.colors_cache.get(event.value)?.clear()
+					mapping.colors_cache.delete(event.value);
+				}
+				if (event.type == "join") {
+					mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
+				}
+				provider.refresh();
+			}
+		} catch (e) {
+			console.log(`stopping event handler for workspace: ${e}`);
+		}
+	};
+	event_handler();
+
+	for (let user of workspace.user_list()) {
+		mapping.colors_cache.set(user, new mapping.UserDecoration(user));
+	}
 
 	vscode.window.showInformationMessage("Connected to workspace");
 	provider.refresh();
