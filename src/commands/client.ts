@@ -79,19 +79,33 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		}
 	});
 
+	let once = true;
 	vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
 		let buf = event.textEditor.document.uri;
 		let selection: vscode.Selection = event.selections[0]
 		let buffer = mapping.bufferMapper.by_editor(buf)
-		if (buffer === undefined) return;
-		let cursor: codemp.Cursor = {
+		if (buffer === undefined) {
+			if (once) {
+				await controller.send({
+					startRow: 0,
+					startCol: 0,
+					endRow: 0,
+					endCol: 0,
+					buffer: "",
+				});
+			}
+			once = false;
+		} else {
+			await controller.send({
 			startRow: selection.anchor.line,
 			startCol: selection.anchor.character,
 			endRow: selection.active.line,
 				endCol: selection.active.character,
 			buffer: buffer,
 			user: undefined,
+			});
+			once = true;
 		}
 		await controller.send(cursor);
 	});
