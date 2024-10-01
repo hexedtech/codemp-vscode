@@ -89,7 +89,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			startRow: selection.anchor.line,
 			startCol: selection.anchor.character,
 			endRow: selection.active.line,
-			endCol: selection.active.character + 1,
+				endCol: selection.active.character,
 			buffer: buffer,
 			user: undefined,
 		}
