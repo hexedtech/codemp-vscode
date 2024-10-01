@@ -107,7 +107,6 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			});
 			once = true;
 		}
-		await controller.send(cursor);
 	});
 
 	// TODO waiting for https://github.com/hexedtech/codemp/pull/19 to reach npm
