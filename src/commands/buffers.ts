@@ -36,7 +36,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 				.replace(range, event.content)
 		})) {
 			vscode.window.showWarningMessage("Couldn't apply changes");
-			await resync(path, workspace, editor, 20); 
+			await resync(path, workspace, editor, 100); 
 		}
 		locks.delete(path);
 
@@ -116,7 +116,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 			editor.document.positionAt(0),
 			editor.document.positionAt(doc_len)
 		);
-		locks.set(buffer_name, `${0}..${doc_len}:${remoteContent}`);
+		locks.set(buffer_name, remoteContent);
 		await editor.edit(editBuilder => {
 			editBuilder
 				.replace(range, remoteContent)
@@ -125,10 +125,10 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	}
 
 	let disposable = vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
-		if (!mapping.bufferMapper.by_editor(event.document.uri)) return;
+		if (file_uri != event.document.uri) return;
 		let skip_this = locks.get(buffer_name);
 		for (let change of event.contentChanges) {
-			if (skip_this && change.text == skip_this) continue;
+			if (skip_this !== undefined && change.text == skip_this) continue;
 			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
 				start: change.rangeOffset,
@@ -241,7 +241,7 @@ export async function resync(buffer_name: string, workspace: codemp.Workspace, e
 	locks.set(buffer_name, content);
 	for (let i = 0; i < tries; i++) {
 		if (await editor.edit(editBuilder => editBuilder.replace(range, content))) {
-			console.log("attempts to sync", tries);
+			console.log("attempts to sync", i);
 			break;
 		}
 		if (i == tries-1) {
