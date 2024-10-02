@@ -173,14 +173,7 @@
         "title": "Jump",
         "category": "codemp",
         "icon": "$(debug-console-evaluation-input)"
-      },
-      {
-        "command": "codemp.forceDesync",
-        "title": "Desync",
-        "category": "codemp"
       }
-
-
     ],
     "configuration": {
       "title": "codemp",
