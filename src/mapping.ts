@@ -79,7 +79,6 @@ export class UserDecoration {
 				borderStyle: 'solid',
 				borderColor: this.color,
 				backgroundColor: this.color + '44', // add alpha
-				after: { contentText: event.user, margin: "1px", color: colors[2], },
 				border: "1px",
 				//isWholeLine: true
 				overviewRulerLane: vscode.OverviewRulerLane.Right,
