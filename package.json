@@ -157,6 +157,12 @@
         "icon": "$(output-view-icon)"
       },
       {
+        "command": "codemp.detach",
+        "title": "Detach from Buffer",
+        "category": "codemp",
+        "icon": "$(arrow-down)"
+      },
+      {
         "command": "codemp.sync",
         "title": "Sync",
         "category": "codemp",

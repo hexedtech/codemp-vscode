@@ -4,7 +4,7 @@ import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, lis
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
 import { workspace, jump, listBuffers, createBuffer } from './commands/workspaces'
-import { attach, share, sync, apply_changes_to_buffer } from './commands/buffers'
+import { attach, share, sync, apply_changes_to_buffer, detach } from './commands/buffers'
 
 export let provider = new CodempTreeProvider();
 
@@ -41,6 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.leaveWorkspace', leaveWorkspace),
 		vscode.commands.registerCommand('codemp.createBuffer', createBuffer),
 		vscode.commands.registerCommand('codemp.listBuffers', listBuffers),
+		vscode.commands.registerCommand('codemp.detach', detach),
 		vscode.commands.registerCommand('codemp.sync', sync),
 		vscode.commands.registerCommand('codemp.refresh', refresh),
 		vscode.commands.registerCommand('codemp.jump', jump),

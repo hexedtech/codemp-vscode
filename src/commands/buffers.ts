@@ -173,7 +173,7 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to detach from" });
 	}
 	if (!buffer_name) return;
 	let controller = workspace.buffer_by_name(buffer_name);
@@ -181,6 +181,7 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 	workspace.detach(buffer_name);
 	mapping.bufferMapper.remove(buffer_name);
 	vscode.window.showInformationMessage(`Detached from buffer ${buffer_name}`)
+	provider.refresh();
 }
 
 
