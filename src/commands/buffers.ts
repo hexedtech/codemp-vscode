@@ -1,54 +1,64 @@
-
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
 import { workspace } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
-let locks: Map<string, boolean> = new Map();
+let singles: Map<string, boolean> = new Map();
+let locks: Map<string, string> = new Map();
 let autoResync = vscode.workspace.getConfiguration('codemp').get<string>("autoResync");
 
 export async function apply_changes_to_buffer(path: string, controller: codemp.BufferController, force?: boolean) {
-	if (workspace === null) {
-		LOGGER.info(`left workspace, unregistering buffer controller '${path}' callback`);
-		controller.clear_callback();
-		return;
-	}
-
 	let editor = mapping.bufferMapper.visible_by_buffer(path);
 	if (editor === undefined) return;
 
-	if (locks.get(path) && !force) return;
-	locks.set(path, true);
+	if (singles.get(path) && !force) return;
+
+	singles.set(path, true);
 	while (true) {
+		if (workspace === null) {
+			LOGGER.info(`left workspace, unregistering buffer controller '${path}' callback`);
+			controller.clear_callback();
+			return;
+		}
 		let event = await controller.try_recv();
 		if (event === null) break;
-		LOGGER.debug(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
+		// LOGGER.info(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 
 		let range = new vscode.Range(
 			editor.document.positionAt(event.start),
 			editor.document.positionAt(event.end)
 		)
 
-		await editor.edit(editBuilder => {
+		locks.set(path, event.content);
+		if (!await editor.edit(editBuilder => {
 			editBuilder
 				.replace(range, event.content)
-		});
+		})) {
+			vscode.window.showWarningMessage("Couldn't apply changes");
+			await resync(path, workspace, editor, 20); 
+		}
+		locks.delete(path);
 
 		if (event.hash !== undefined) {
 			if (codemp.hash(editor.document.getText()) !== event.hash) {
 				if (autoResync) {
 					vscode.window.showWarningMessage("Out of Sync, resynching...");
-					await resync(path, workspace, editor);
+					await resync(path, workspace, editor, 20);
 				} else {
 					controller.clear_callback();
 					const selection = await vscode.window.showWarningMessage('Out of Sync', 'Resync');
-					if (selection !== undefined && workspace) await resync(path, workspace, editor);
+					if (selection !== undefined && workspace) {
+						await resync(path, workspace, editor, 20);
+						controller.callback(async (controller: codemp.BufferController) =>
+							await apply_changes_to_buffer(controller.get_path(), controller)
+						);
+					}
 				}
 			}
 		}
-		locks.set(path, false);
 	}
+	singles.set(path, false);
 }
 
 export async function attach_to_remote_buffer(buffer_name: string, set_content?: boolean): Promise<codemp.BufferController | undefined> {
@@ -106,17 +116,20 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 			editor.document.positionAt(0),
 			editor.document.positionAt(doc_len)
 		);
+		locks.set(buffer_name, `${0}..${doc_len}:${remoteContent}`);
 		await editor.edit(editBuilder => {
 			editBuilder
 				.replace(range, remoteContent)
 		});
+		locks.delete(buffer_name);
 	}
 
 	let disposable = vscode.workspace.onDidChangeTextDocument(async (event: vscode.TextDocumentChangeEvent) => {
-		if (locks.get(buffer_name)) { return }
-		if (event.document.uri !== file_uri) return; // ?
+		if (!mapping.bufferMapper.by_editor(event.document.uri)) return;
+		let skip_this = locks.get(buffer_name);
 		for (let change of event.contentChanges) {
-			LOGGER.debug(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
+			if (skip_this && change.text == skip_this) continue;
+			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
 				start: change.rangeOffset,
 				end: change.rangeOffset + change.rangeLength,
@@ -208,13 +221,11 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		if (buffer_name === undefined) throw "No such buffer managed by codemp"
 	}
 
-	locks.set(buffer_name, true);
 	resync(buffer_name, workspace, editor);
-	locks.set(buffer_name, false);
 }
 
-export async function resync(buffer_name: string, workspace: codemp.Workspace, editor: vscode.TextEditor) {
-
+export async function resync(buffer_name: string, workspace: codemp.Workspace, editor: vscode.TextEditor, tries?: number) {
+	LOGGER.info(`resynching buffer ${buffer_name}`);
 	let controller = workspace.buffer_by_name(buffer_name);
 	if (controller === null) throw "No such buffer controller"
 
@@ -225,6 +236,17 @@ export async function resync(buffer_name: string, workspace: codemp.Workspace, e
 		editor.document.positionAt(doc_len)
 	);
 
-	await editor.edit(editBuilder => editBuilder.replace(range, content));
+	if (!tries) { tries = 1 };
 
+	locks.set(buffer_name, content);
+	for (let i = 0; i < tries; i++) {
+		if (await editor.edit(editBuilder => editBuilder.replace(range, content))) {
+			console.log("attempts to sync", tries);
+			break;
+		}
+		if (i == tries-1) {
+			vscode.window.showErrorMessage(`Failed setting buffer content after ${tries} tries`);
+		}
+	}
+	locks.delete(buffer_name);
 }
