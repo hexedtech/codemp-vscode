@@ -139,7 +139,7 @@
         "icon": "$(extensions-view-icon)"
       },
       {
-        "command": "codemp.leaveWorkspace",
+        "command": "codemp.leave",
         "title": "Leave Workspace",
         "category": "codemp",
         "icon": "$(arrow-down)"

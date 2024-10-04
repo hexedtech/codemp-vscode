@@ -144,15 +144,6 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
-export async function leave() {
-	if (!client) throw "can't leave while disconnected";
-	if (!workspace) return vscode.window.showWarningMessage("Not in a workspace");
-	client.leave_workspace(workspace.id());
-	if (cursor_disposable !== null) cursor_disposable.dispose();
-	cursor_disposable = null;
-	setWorkspace(null);
-}
-
 
 export async function listWorkspaces() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
@@ -181,14 +172,18 @@ export async function inviteToWorkspace() {
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 
-export async function leaveWorkspace() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace you want to leave" });
-	if (workspace_id === undefined) return;
-	await client.leave_workspace(workspace_id);
-	vscode.window.showInformationMessage("Left workspace " + workspace_id);
+export async function leave() {
+	if (!client) throw "can't leave while disconnected";
+	if (!workspace) throw "can't leave while not in a workspace";
+	workspace.cursor().clear_callback()
+	client.leave_workspace(workspace.id());
+	if (cursor_disposable !== null) cursor_disposable.dispose();
+	let workspace_id = workspace.id();
+	setWorkspace(null);
 	provider.refresh();
+	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 }
+
 
 export async function refresh() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
