@@ -36,7 +36,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 				.replace(range, event.content)
 		})) {
 			vscode.window.showWarningMessage("Couldn't apply changes");
-			await resync(path, workspace, editor, 100); 
+			await resync(path, workspace, editor, 100);
 		}
 		locks.delete(path);
 
@@ -244,7 +244,7 @@ export async function resync(buffer_name: string, workspace: codemp.Workspace, e
 			console.log("attempts to sync", i);
 			break;
 		}
-		if (i == tries-1) {
+		if (i == tries - 1) {
 			vscode.window.showErrorMessage(`Failed setting buffer content after ${tries} tries`);
 		}
 	}

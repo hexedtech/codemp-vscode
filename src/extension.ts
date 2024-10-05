@@ -3,7 +3,7 @@ import * as codemp from 'codemp';
 import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
-import { workspace, jump, listBuffers, createBuffer , deleteBuffer } from './commands/workspaces'
+import { workspace, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
 import { attach, share, sync, apply_changes_to_buffer, detach } from './commands/buffers'
 
 export let provider = new CodempTreeProvider();

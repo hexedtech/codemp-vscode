@@ -8,7 +8,7 @@ import { LOGGER, provider } from '../extension';
 // TODO this "global state" should probably live elsewher but we need lo update it from these commands
 export let client: codemp.Client | null = null;
 export let workspace_list: string[] = [];
-export let cursor_disposable : vscode.Disposable | null;
+export let cursor_disposable: vscode.Disposable | null;
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -59,7 +59,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	setWorkspace(await client.join_workspace(workspace_id));
 	if (!workspace) return;
 	let controller = workspace.cursor();
-	controller.callback(async function(controller: codemp.CursorController) {
+	controller.callback(async function (controller: codemp.CursorController) {
 		while (true) {
 			let event = await controller.try_recv();
 			if (workspace === null) {
@@ -104,12 +104,12 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			once = false;
 		} else {
 			await controller.send({
-			startRow: selection.anchor.line,
-			startCol: selection.anchor.character,
-			endRow: selection.active.line,
+				startRow: selection.anchor.line,
+				startCol: selection.anchor.character,
+				endRow: selection.active.line,
 				endCol: selection.active.character,
-			buffer: buffer,
-			user: undefined,
+				buffer: buffer,
+				user: undefined,
 			});
 			once = true;
 		}
