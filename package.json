@@ -163,6 +163,13 @@
         "icon": "$(arrow-down)"
       },
       {
+        "command": "codemp.deleteBuffer",
+        "title": "Delete Buffer",
+        "category": "codemp",
+        "icon": "$(arrow-down)"
+      },
+      {
+
         "command": "codemp.sync",
         "title": "Sync",
         "category": "codemp",

@@ -55,3 +55,12 @@ export async function listBuffers() {
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
 }
+
+export async function deleteBuffer() {
+	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to delete" }));
+	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	await workspace.delete(bufferName);
+	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
+	listBuffers();
+	
+}
