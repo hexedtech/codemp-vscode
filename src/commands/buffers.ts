@@ -185,21 +185,20 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 }
 
 
-export async function share(selected: vscode.TreeItem | undefined) {
+export async function share() {
 	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
-	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof (selected.label) === 'string') {
-			buffer_name = selected.label;
-		} else {
-			buffer_name = selected.label.label; // TODO ughh what is this api?
-		}
-	} else if (vscode.window.activeTextEditor !== null) {
+	if (vscode.window.activeTextEditor !== null) {
 		buffer_name = vscode.window.activeTextEditor?.document.uri.toString();
 	} else {
 		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
 	}
 	if (!buffer_name) return; // action cancelled by user
+	if (!vscode.workspace.workspaceFolders) return vscode.window.showWarningMessage("Open a vscode workspace folder first")
+	let workspacePath: string = vscode.workspace.workspaceFolders[0].uri.toString();
+	buffer_name = buffer_name.replace(workspacePath, "").substring(1); //vscode.workspace.asRelativePath doesn't work properly with other extensions like ssh, substring(1) to remove "/"
+	console.log("After: " + buffer_name);
+	await workspace.create(buffer_name);
 	await attach_to_remote_buffer(buffer_name, true);
 }
 
