@@ -3,7 +3,7 @@ import * as codemp from 'codemp';
 import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
-import { workspace, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
+import { workspace, jump, listBuffers, createBuffer, deleteBuffer, follow } from './commands/workspaces'
 import { attach, share, sync, apply_changes_to_buffer, detach } from './commands/buffers'
 
 export let provider = new CodempTreeProvider();
@@ -46,6 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.sync', sync),
 		vscode.commands.registerCommand('codemp.refresh', refresh),
 		vscode.commands.registerCommand('codemp.jump', jump),
+		vscode.commands.registerCommand('codemp.follow', follow),
 	]) {
 		context.subscriptions.push(cmd);
 	}

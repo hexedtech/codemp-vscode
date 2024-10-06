@@ -6,6 +6,7 @@ import { LOGGER, provider } from '../extension';
 
 
 export let workspace: codemp.Workspace | null = null;
+export let doFollow: boolean = false;
 
 
 export function setWorkspace(ws: codemp.Workspace | null) {
@@ -25,7 +26,10 @@ export async function jump(selected: vscode.TreeItem | undefined) {
 	}
 	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
 	if (!user) return;  // user cancelled with ESC
+	executeJump(user);
+}
 
+export async function executeJump(user: string) {
 	let user_hl = mapping.colors_cache.get(user);
 	if (user_hl === undefined) return vscode.window.showWarningMessage("unknown position of such user");
 	let uri = mapping.bufferMapper.uri_by_buffer(user_hl.buffer);
@@ -39,6 +43,23 @@ export async function jump(selected: vscode.TreeItem | undefined) {
 	editor.revealRange(cursor_range, vscode.TextEditorRevealType.InCenter);
 }
 
+export async function follow(selected: vscode.TreeItem | undefined) {
+	doFollow=!doFollow
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	let user;
+	if (selected !== undefined && selected.label !== undefined) {
+		if (typeof (selected.label) === 'string') {
+			user = selected.label;
+		} else {
+			user = selected.label.label;
+		}
+	}
+	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
+	if (!user) return;  // user cancelled with ESC
+	while(doFollow){
+		executeJump(user);
+	}
+}
 
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
@@ -62,5 +83,5 @@ export async function deleteBuffer() {
 	await workspace.delete(bufferName);
 	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
 	listBuffers();
-	
+
 }

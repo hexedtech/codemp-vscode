@@ -91,6 +91,11 @@
           "command": "codemp.jump",
           "when": "view == codemp-tree-view && viewItem == user",
           "group": "inline"
+        },
+        {
+          "command": "codemp.follow",
+          "when": "view == codemp-tree-view && viewItem == user",
+          "group": "inline"
         }
       ]
     },
@@ -184,6 +189,13 @@
       {
         "command": "codemp.jump",
         "title": "Jump",
+        "category": "codemp",
+        "icon": "$(debug-console-evaluation-input)"
+      }
+      ,
+      {
+        "command": "codemp.follow",
+        "title": "Follow User",
         "category": "codemp",
         "icon": "$(debug-console-evaluation-input)"
       }
