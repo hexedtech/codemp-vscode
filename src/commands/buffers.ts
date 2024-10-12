@@ -157,7 +157,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+		buffer_name = await vscode.window.showQuickPick(workspace.filetree(null, false), { placeHolder: "buffer to attach to:" }, undefined);
 	}
 	if (!buffer_name) return;
 	await attach_to_remote_buffer(buffer_name);
@@ -173,7 +173,7 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to detach from" });
+		buffer_name = await vscode.window.showQuickPick(workspace.buffer_list(), { placeHolder: "buffer to detach from:" }, undefined);
 	}
 	if (!buffer_name) return;
 	let controller = workspace.buffer_by_name(buffer_name);
@@ -191,7 +191,7 @@ export async function share() {
 	if (vscode.window.activeTextEditor !== null) {
 		buffer_name = vscode.window.activeTextEditor?.document.uri.toString();
 	} else {
-		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to attach to" });
+		buffer_name = await vscode.window.showInputBox({ prompt: "path of buffer to share" });
 	}
 	if (!buffer_name) return; // action cancelled by user
 	if (!vscode.workspace.workspaceFolders) return vscode.window.showWarningMessage("Open a vscode workspace folder first")
@@ -218,7 +218,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		editor = vscode.window.activeTextEditor;
 		if (editor === undefined) throw "no active editor to sync";
 		buffer_name = mapping.bufferMapper.by_editor(editor.document.uri);
-		if (buffer_name === undefined) throw "No such buffer managed by codemp"
+		if (buffer_name === undefined) return vscode.window.showWarningMessage("Buffer not synched with codemp");
 	}
 
 	resync(buffer_name, workspace, editor);

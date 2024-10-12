@@ -50,12 +50,12 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			workspace_id = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		workspace_id = await vscode.window.showInputBox({ prompt: "name of workspace to attach to" });
+		workspace_id = await vscode.window.showQuickPick(workspace_list, { placeHolder: "workspace to join:" }, undefined);
 	}
 	if (!workspace_id) return;  // user cancelled with ESC
 	if (vscode.workspace.workspaceFolders === undefined) {
-		vscode.window.showErrorMessage("Open a Workspace folder first");
-		return;
+		let ws = await vscode.window.showWorkspaceFolderPick({ placeHolder: "directory to open workspace into:" });
+		if (ws === undefined) return vscode.window.showErrorMessage("Open a Workspace folder first");
 	}
 	setWorkspace(await client.join_workspace(workspace_id));
 	if (!workspace) return;
@@ -173,9 +173,9 @@ export async function createWorkspace() {
 
 export async function inviteToWorkspace() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name of the workspace you want to invite the user into" });
+	let workspace_id = await vscode.window.showQuickPick(workspace_list, { placeHolder: "workspace to invite to:" });
 	if (workspace_id === undefined) return;
-	let user_id = await vscode.window.showInputBox({ prompt: "Enter name of the user you want to invite" });
+	let user_id = await vscode.window.showInputBox({ prompt: "Name of user to invite" });
 	if (user_id === undefined) return;
 	await client.invite_to_workspace(workspace_id, user_id);
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
