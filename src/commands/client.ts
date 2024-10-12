@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import { workspace, setWorkspace, follow, setFollow, executeJump } from "./workspaces";
+import { executeJump, workspaceState } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
 
@@ -9,7 +9,6 @@ import { LOGGER, provider } from '../extension';
 export let client: codemp.Client | null = null;
 export let workspace_list: string[] = [];
 export let cursor_disposable: vscode.Disposable | null;
-let movedByFollow = false;
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -57,13 +56,12 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		let ws = await vscode.window.showWorkspaceFolderPick({ placeHolder: "directory to open workspace into:" });
 		if (ws === undefined) return vscode.window.showErrorMessage("Open a Workspace folder first");
 	}
-	setWorkspace(await client.join_workspace(workspace_id));
-	if (!workspace) return;
-	let controller = workspace.cursor();
+	workspaceState.workspace = await client.join_workspace(workspace_id);
+	let controller = workspaceState.workspace.cursor();
 	controller.callback(async function (controller: codemp.CursorController) {
 		while (true) {
 			let event = await controller.try_recv();
-			if (workspace === null) {
+			if (workspaceState.workspace === null) {
 				controller.clear_callback();
 				LOGGER.info("left workspace, stopping cursor controller");
 				return;
@@ -79,14 +77,11 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				mapping.colors_cache.set(event.user, mapp);
 				provider.refresh();
 			}
-			if (follow === event.user) {
-				movedByFollow = true;
-				executeJump(event.user);
-			}
 
 			let editor = mapping.bufferMapper.visible_by_buffer(event.buffer);
 			let refresh = event.buffer != mapp.buffer;
 			mapp.update(event, editor);
+			if (workspaceState.follow === event.user) executeJump(event.user);
 			if (refresh) provider.refresh();
 		}
 	});
@@ -94,8 +89,8 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	let once = true;
 	cursor_disposable = vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
-		if (!movedByFollow) setFollow(null);
-		else movedByFollow = false;
+		if (!workspaceState.justJumped) workspaceState.follow = null;
+		workspaceState.justJumped = false;
 		let buf = event.textEditor.document.uri;
 		let selection: vscode.Selection = event.selections[0];
 		let buffer = mapping.bufferMapper.by_editor(buf);
@@ -128,8 +123,8 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	let event_handler = async () => {
 		try {
 			while (true) {
-				if (workspace === null) break;
-				let event = await workspace.event();
+				if (workspaceState.workspace === null) break;
+				let event = await workspaceState.workspace.event();
 				if (event.type == "leave") {
 					mapping.colors_cache.get(event.value)?.clear()
 					mapping.colors_cache.delete(event.value);
@@ -145,7 +140,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	};
 	event_handler();
 
-	for (let user of workspace.user_list()) {
+	for (let user of workspaceState.workspace.user_list()) {
 		mapping.colors_cache.set(user, new mapping.UserDecoration(user));
 	}
 
@@ -183,12 +178,12 @@ export async function inviteToWorkspace() {
 
 export async function leave() {
 	if (!client) throw "can't leave while disconnected";
-	if (!workspace) throw "can't leave while not in a workspace";
-	workspace.cursor().clear_callback()
-	client.leave_workspace(workspace.id());
+	if (!workspaceState.workspace) throw "can't leave while not in a workspace";
+	workspaceState.workspace.cursor().clear_callback()
+	client.leave_workspace(workspaceState.workspace.id());
 	if (cursor_disposable !== null) cursor_disposable.dispose();
-	let workspace_id = workspace.id();
-	setWorkspace(null);
+	let workspace_id = workspaceState.workspace.id();
+	workspaceState.workspace = null;
 	provider.refresh();
 	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 }

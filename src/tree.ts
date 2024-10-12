@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { client, workspace_list } from './commands/client';
-import { workspace } from './commands/workspaces';
+import { workspaceState } from './commands/workspaces';
 import { bufferMapper, colors_cache } from './mapping';
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
@@ -22,9 +22,9 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 		if (element) {
 			switch (element.type) {
 				case Type.Workspace:
-					if (workspace === null) return [];
-					else if (element.label == workspace.id()) {
-						return workspace.filetree(undefined, false).map((x) =>
+					if (workspaceState.workspace === null) return [];
+					else if (element.label == workspaceState.workspace.id()) {
+						return workspaceState.workspace.filetree(undefined, false).map((x) =>
 							new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 						);
 					} else return [];
@@ -48,9 +48,9 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				return []; // empty screen with [connect] button
 			}
 			let items = workspace_list.map((x) =>
-				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspace === null })
+				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspaceState.workspace === null })
 			);
-			if (workspace !== null) {
+			if (workspaceState.workspace !== null) {
 				items.push(new CodempTreeItem("", Type.Placeholder, {}));
 				items.push(new CodempTreeItem("Users", Type.UserList, { expandable: true }));
 			}

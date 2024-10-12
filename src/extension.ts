@@ -3,7 +3,7 @@ import * as codemp from 'codemp';
 import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
-import { workspace, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
+import { workspaceState, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
 import { attach, share, sync, apply_changes_to_buffer, detach } from './commands/buffers'
 
 export let provider = new CodempTreeProvider();
@@ -19,11 +19,11 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(sub);
 
 	vscode.window.onDidChangeVisibleTextEditors(async (editors: readonly vscode.TextEditor[]) => {
-		if (workspace === null) return;
+		if (workspaceState.workspace === null) return;
 		for (let editor of editors) {
 			let path = mapping.bufferMapper.by_editor(editor.document.uri);
 			if (!path) continue;
-			let controller = workspace.buffer_by_name(path);
+			let controller = workspaceState.workspace.buffer_by_name(path);
 			if (!controller) continue;
 			await apply_changes_to_buffer(path, controller, true);
 		}
@@ -52,8 +52,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-	if (client && workspace) {
-		await client.leave_workspace(workspace.id());
+	if (client && workspaceState.workspace) {
+		await client.leave_workspace(workspaceState.workspace.id());
 	}
 }
 

@@ -5,17 +5,15 @@ import { client } from "./client"
 import { LOGGER, provider } from '../extension';
 
 
-export let workspace: codemp.Workspace | null = null;
-export let follow: string | null = null;
-
-
-export function setWorkspace(ws: codemp.Workspace | null) {
-	workspace = ws;
-}
-
-export function setFollow(doFollow: string | null) {
-	follow = doFollow;
-}
+export let workspaceState: {
+	workspace: codemp.Workspace | null,
+	follow: string | null,
+	justJumped: boolean,
+} = {
+	workspace: null,
+	follow: null,
+	justJumped: false,
+};
 
 
 export async function jump(selected: vscode.TreeItem | undefined) {
@@ -30,7 +28,7 @@ export async function jump(selected: vscode.TreeItem | undefined) {
 	}
 	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
 	if (!user) return;  // user cancelled with ESC
-	setFollow(user);
+	workspaceState.follow=user;
 	executeJump(user);
 }
 
@@ -41,35 +39,36 @@ export async function executeJump(user: string) {
 	if (uri === undefined) {
 		return vscode.window.showWarningMessage("user is on an untracked buffer: " + user_hl.buffer);
 	}
-	let editor = await vscode.window.showTextDocument(uri, { preserveFocus: false });
+	let editor = vscode.window.activeTextEditor;
+	if (editor === undefined || editor.document.uri != uri) {
+		workspaceState.justJumped = true;
+		editor = await vscode.window.showTextDocument(uri, { preserveFocus: false });
+	}
 	let range_start: vscode.Position = new vscode.Position(user_hl.startRow, user_hl.startCol);
 	let range_end: vscode.Position = new vscode.Position(user_hl.endRow, user_hl.endCol);
 	let cursor_range = new vscode.Range(range_start, range_end);
 	editor.revealRange(cursor_range, vscode.TextEditorRevealType.InCenter);
 }
 
-
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
-	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspace.create(bufferName);
+	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	await workspaceState.workspace.create(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
-	listBuffers();
-	//provider.refresh();
+	provider.refresh();
 }
 
 export async function listBuffers() {
-	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	let buffers = workspace.filetree(undefined, false);
+	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	let buffers = workspaceState.workspace.filetree(undefined, false);
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
 }
 
 export async function deleteBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to delete" }));
-	if (workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspace.delete(bufferName);
+	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	await workspaceState.workspace.delete(bufferName);
 	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
-	listBuffers();
-
+	provider.refresh();
 }
