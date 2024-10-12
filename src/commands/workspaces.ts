@@ -6,11 +6,15 @@ import { LOGGER, provider } from '../extension';
 
 
 export let workspace: codemp.Workspace | null = null;
-export let doFollow: boolean = false;
+export let follow: string | null = null;
 
 
 export function setWorkspace(ws: codemp.Workspace | null) {
 	workspace = ws;
+}
+
+export function setFollow(doFollow: string | null) {
+	follow = doFollow;
 }
 
 
@@ -26,6 +30,7 @@ export async function jump(selected: vscode.TreeItem | undefined) {
 	}
 	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
 	if (!user) return;  // user cancelled with ESC
+	setFollow(user);
 	executeJump(user);
 }
 
@@ -43,23 +48,6 @@ export async function executeJump(user: string) {
 	editor.revealRange(cursor_range, vscode.TextEditorRevealType.InCenter);
 }
 
-export async function follow(selected: vscode.TreeItem | undefined) {
-	doFollow=!doFollow
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let user;
-	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof (selected.label) === 'string') {
-			user = selected.label;
-		} else {
-			user = selected.label.label;
-		}
-	}
-	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
-	if (!user) return;  // user cancelled with ESC
-	while(doFollow){
-		executeJump(user);
-	}
-}
 
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));

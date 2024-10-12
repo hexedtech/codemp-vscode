@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import { workspace, setWorkspace } from "./workspaces";
+import { workspace, setWorkspace, follow, setFollow, executeJump } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
 
@@ -9,6 +9,7 @@ import { LOGGER, provider } from '../extension';
 export let client: codemp.Client | null = null;
 export let workspace_list: string[] = [];
 export let cursor_disposable: vscode.Disposable | null;
+let movedByFollow = false;
 
 export async function connect() {
 	let config = vscode.workspace.getConfiguration('codemp');
@@ -78,6 +79,11 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				mapping.colors_cache.set(event.user, mapp);
 				provider.refresh();
 			}
+			if (follow === event.user) {
+				movedByFollow = true;
+				executeJump(event.user);
+			}
+
 			let editor = mapping.bufferMapper.visible_by_buffer(event.buffer);
 			let refresh = event.buffer != mapp.buffer;
 			mapp.update(event, editor);
@@ -88,9 +94,11 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	let once = true;
 	cursor_disposable = vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
 		if (event.kind == vscode.TextEditorSelectionChangeKind.Command) return; // TODO commands might move cursor too
+		if (!movedByFollow) setFollow(null);
+		else movedByFollow = false;
 		let buf = event.textEditor.document.uri;
-		let selection: vscode.Selection = event.selections[0]
-		let buffer = mapping.bufferMapper.by_editor(buf)
+		let selection: vscode.Selection = event.selections[0];
+		let buffer = mapping.bufferMapper.by_editor(buf);
 		if (buffer === undefined) {
 			if (once) {
 				await controller.send({
@@ -103,6 +111,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			}
 			once = false;
 		} else {
+
 			await controller.send({
 				startRow: selection.anchor.line,
 				startCol: selection.anchor.character,

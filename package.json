@@ -91,11 +91,6 @@
           "command": "codemp.jump",
           "when": "view == codemp-tree-view && viewItem == user",
           "group": "inline"
-        },
-        {
-          "command": "codemp.follow",
-          "when": "view == codemp-tree-view && viewItem == user",
-          "group": "inline"
         }
       ]
     },
