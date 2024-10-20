@@ -24,7 +24,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.Workspace:
 					if (workspaceState.workspace === null) return [];
 					else if (element.label == workspaceState.workspace.id()) {
-						return workspaceState.workspace.filetree(undefined, false).map((x) =>
+						return workspaceState.workspace.searchBuffers().map((x) =>
 							new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 						);
 					} else return [];

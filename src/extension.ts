@@ -23,7 +23,7 @@ export function activate(context: vscode.ExtensionContext) {
 		for (let editor of editors) {
 			let path = mapping.bufferMapper.by_editor(editor.document.uri);
 			if (!path) continue;
-			let controller = workspaceState.workspace.buffer_by_name(path);
+			let controller = workspaceState.workspace.getBuffer(path);
 			if (!controller) continue;
 			await apply_changes_to_buffer(path, controller, true);
 		}
@@ -53,7 +53,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
 	if (client && workspaceState.workspace) {
-		await client.leave_workspace(workspaceState.workspace.id());
+		await client.leaveWorkspace(workspaceState.workspace.id());
 	}
 }
 

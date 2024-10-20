@@ -56,13 +56,13 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		let ws = await vscode.window.showWorkspaceFolderPick({ placeHolder: "directory to open workspace into:" });
 		if (ws === undefined) return vscode.window.showErrorMessage("Open a Workspace folder first");
 	}
-	workspaceState.workspace = await client.join_workspace(workspace_id);
+	workspaceState.workspace = await client.attachWorkspace(workspace_id);
 	let controller = workspaceState.workspace.cursor();
 	controller.callback(async function (controller: codemp.CursorController) {
 		while (true) {
-			let event = await controller.try_recv();
+			let event = await controller.tryRecv();
 			if (workspaceState.workspace === null) {
-				controller.clear_callback();
+				controller.clearCallback();
 				LOGGER.info("left workspace, stopping cursor controller");
 				return;
 			}
@@ -78,8 +78,8 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				provider.refresh();
 			}
 
-			let editor = mapping.bufferMapper.visible_by_buffer(event.buffer);
-			let refresh = event.buffer != mapp.buffer;
+			let editor = mapping.bufferMapper.visible_by_buffer(event.sel.buffer);
+			let refresh = event.sel.buffer != mapp.buffer;
 			mapp.update(event, editor);
 			if (workspaceState.follow === event.user) executeJump(event.user);
 			if (refresh) provider.refresh();
@@ -113,35 +113,34 @@ export async function join(selected: vscode.TreeItem | undefined) {
 				endRow: selection.active.line,
 				endCol: selection.active.character,
 				buffer: buffer,
-				user: undefined,
 			});
 			once = true;
 		}
 	});
 
-	// TODO waiting for https://github.com/hexedtech/codemp/pull/19 to reach npm
-	let event_handler = async () => {
-		try {
-			while (true) {
-				if (workspaceState.workspace === null) break;
-				let event = await workspaceState.workspace.event();
-				if (event.type == "leave") {
-					mapping.colors_cache.get(event.value)?.clear()
-					mapping.colors_cache.delete(event.value);
-				}
-				if (event.type == "join") {
-					mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
-				}
-				provider.refresh();
-			}
-		} catch (e) {
-			console.log(`stopping event handler for workspace: ${e}`);
+	
+	workspaceState.workspace.callback(async function (controller: codemp.Workspace) {
+		while(true){
+		if (workspaceState.workspace === null) {
+			controller.clearCallback();
+			LOGGER.info("left workspace, stopping receiving events");
+			return;
 		}
-	};
-	event_handler();
+		let event = await workspaceState.workspace.tryRecv();
+		if (event === null) break;
+		if (event.type == "leave") {
+			mapping.colors_cache.get(event.value)?.clear()
+			mapping.colors_cache.delete(event.value);
+		}
+		if (event.type == "join") {
+			mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
+		}
+		provider.refresh();
+		}
+	});
 
-	for (let user of workspaceState.workspace.user_list()) {
-		mapping.colors_cache.set(user, new mapping.UserDecoration(user));
+	for (let user of workspaceState.workspace.userList()) {
+		mapping.colors_cache.set(user.name, new mapping.UserDecoration(user.name));
 	}
 
 	vscode.window.showInformationMessage("Connected to workspace");
@@ -151,7 +150,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 
 export async function listWorkspaces() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	workspace_list = await client.list_workspaces(true, true);
+	workspace_list = await client.fetchJoinedWorkspaces();
 	provider.refresh();
 }
 
@@ -161,7 +160,7 @@ export async function createWorkspace() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace" });
 	if (workspace_id === undefined) return;
-	await client.create_workspace(workspace_id);
+	await client.createWorkspace(workspace_id);
 	vscode.window.showInformationMessage("Created new workspace " + workspace_id);
 	listWorkspaces();
 }
@@ -172,15 +171,15 @@ export async function inviteToWorkspace() {
 	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Name of user to invite" });
 	if (user_id === undefined) return;
-	await client.invite_to_workspace(workspace_id, user_id);
+	await client.inviteToWorkspace(workspace_id, user_id);
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 
 export async function leave() {
 	if (!client) throw "can't leave while disconnected";
 	if (!workspaceState.workspace) throw "can't leave while not in a workspace";
-	workspaceState.workspace.cursor().clear_callback()
-	client.leave_workspace(workspaceState.workspace.id());
+	workspaceState.workspace.cursor().clearCallback()
+	client.leaveWorkspace(workspaceState.workspace.id());
 	if (cursor_disposable !== null) cursor_disposable.dispose();
 	let workspace_id = workspaceState.workspace.id();
 	workspaceState.workspace = null;

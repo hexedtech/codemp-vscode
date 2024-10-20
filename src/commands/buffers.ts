@@ -18,22 +18,22 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 	while (true) {
 		if (workspaceState.workspace === null) {
 			LOGGER.info(`left workspace, unregistering buffer controller '${path}' callback`);
-			controller.clear_callback();
+			controller.clearCallback();
 			return;
 		}
-		let event = await controller.try_recv();
+		let event = await controller.tryRecv();
 		if (event === null) break;
 		// LOGGER.info(`buffer.callback(event: [${event.start}, ${event.content}, ${event.end}])`)
 
 		let range = new vscode.Range(
-			editor.document.positionAt(event.start),
-			editor.document.positionAt(event.end)
+			editor.document.positionAt(event.change.startIdx),
+			editor.document.positionAt(event.change.endIdx)
 		)
 
-		locks.set(path, event.content);
+		locks.set(path, event.change.content);
 		if (!await editor.edit(editBuilder => {
 			editBuilder
-				.replace(range, event.content)
+				.replace(range, event.change.content)
 		})) {
 			vscode.window.showWarningMessage("Couldn't apply changes");
 			await resync(path, workspaceState.workspace, editor, 100);
@@ -46,12 +46,12 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 					vscode.window.showWarningMessage("Out of Sync, resynching...");
 					await resync(path, workspaceState.workspace, editor, 20);
 				} else {
-					controller.clear_callback();
+					controller.clearCallback();
 					const selection = await vscode.window.showWarningMessage('Out of Sync', 'Resync');
 					if (selection !== undefined && workspaceState.workspace) {
 						await resync(path, workspaceState.workspace, editor, 20);
 						controller.callback(async (controller: codemp.BufferController) =>
-							await apply_changes_to_buffer(controller.get_path(), controller)
+							await apply_changes_to_buffer(controller.path(), controller)
 						);
 					}
 				}
@@ -86,7 +86,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	let doc = await vscode.workspace.openTextDocument(path);
 	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
 	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
-	let buffer: codemp.BufferController = await workspaceState.workspace.attach(buffer_name);
+	let buffer: codemp.BufferController = await workspaceState.workspace.attachBuffer(buffer_name);
 
 	// wait for server changes
 	// TODO poll never unblocks, so this dirty fix is necessary
@@ -107,7 +107,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	if (set_content) {
 		// make remote document match local content
 		let doc_len = remoteContent.length;
-		await buffer.send({ start: 0, end: doc_len, content: localContent });
+		await buffer.send({ startIdx: 0, endIdx: doc_len, content: localContent });
 	} else {
 		// make local document match remote content
 		let doc_len = localContent.length;
@@ -131,18 +131,18 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 			if (skip_this !== undefined && change.text == skip_this) continue;
 			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
 			await buffer.send({
-				start: change.rangeOffset,
-				end: change.rangeOffset + change.rangeLength,
+				startIdx: change.rangeOffset,
+				endIdx: change.rangeOffset + change.rangeLength,
 				content: change.text
 			});
 		}
 	});
 
 	buffer.callback(async (controller: codemp.BufferController) =>
-		await apply_changes_to_buffer(controller.get_path(), controller)
+		await apply_changes_to_buffer(controller.path(), controller)
 	);
 
-	mapping.bufferMapper.register(buffer.get_path(), file_uri, disposable);
+	mapping.bufferMapper.register(buffer.path(), file_uri, disposable);
 
 	provider.refresh();
 }
@@ -157,7 +157,7 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.filetree(null, false), { placeHolder: "buffer to attach to:" }, undefined);
+		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.searchBuffers(), { placeHolder: "buffer to attach to:" }, undefined);
 	}
 	if (!buffer_name) return;
 	await attach_to_remote_buffer(buffer_name);
@@ -173,12 +173,12 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.buffer_list(), { placeHolder: "buffer to detach from:" }, undefined);
+		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.activeBuffers(), { placeHolder: "buffer to detach from:" }, undefined);
 	}
 	if (!buffer_name) return;
-	let controller = workspaceState.workspace.buffer_by_name(buffer_name);
-	if (controller) controller.clear_callback();
-	workspaceState.workspace.detach(buffer_name);
+	let controller = workspaceState.workspace.getBuffer(buffer_name);
+	if (controller) controller.clearCallback();
+	workspaceState.workspace.detachBuffer(buffer_name);
 	mapping.bufferMapper.remove(buffer_name);
 	vscode.window.showInformationMessage(`Detached from buffer ${buffer_name}`)
 	provider.refresh();
@@ -198,7 +198,7 @@ export async function share() {
 	let workspacePath: string = vscode.workspace.workspaceFolders[0].uri.toString();
 	buffer_name = buffer_name.replace(workspacePath, "").substring(1); //vscode.workspace.asRelativePath doesn't work properly with other extensions like ssh, substring(1) to remove "/"
 	console.log("After: " + buffer_name);
-	await workspaceState.workspace.create(buffer_name);
+	await workspaceState.workspace.createBuffer(buffer_name);
 	await attach_to_remote_buffer(buffer_name, true);
 }
 
@@ -226,7 +226,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 
 export async function resync(buffer_name: string, workspace: codemp.Workspace, editor: vscode.TextEditor, tries?: number) {
 	LOGGER.info(`resynching buffer ${buffer_name}`);
-	let controller = workspace.buffer_by_name(buffer_name);
+	let controller = workspace.getBuffer(buffer_name);
 	if (controller === null) throw "No such buffer controller"
 
 	let content = await controller.content();

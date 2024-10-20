@@ -53,14 +53,14 @@ export async function executeJump(user: string) {
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.create(bufferName);
+	await workspaceState.workspace.createBuffer(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 	provider.refresh();
 }
 
 export async function listBuffers() {
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	let buffers = workspaceState.workspace.filetree(undefined, false);
+	let buffers = workspaceState.workspace.searchBuffers();
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
 }
@@ -68,7 +68,7 @@ export async function listBuffers() {
 export async function deleteBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to delete" }));
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.delete(bufferName);
+	await workspaceState.workspace.deleteBuffer(bufferName);
 	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
 	provider.refresh();
 }
