@@ -68,11 +68,11 @@ export class UserDecoration {
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
 	public update(event: codemp.Cursor, editor?: vscode.TextEditor) {
-		this.buffer = event.buffer;
-		this.startRow = event.startRow;
-		this.startCol = event.startCol;
-		this.endRow = event.endRow;
-		this.endCol = event.endCol;
+		this.buffer = event.sel.buffer;
+		this.startRow = event.sel.startRow;
+		this.startCol = event.sel.startCol;
+		this.endRow = event.sel.endRow;
+		this.endCol = event.sel.endCol;
 		if (this.decoration == null) {
 			this.decoration = vscode.window.createTextEditorDecorationType({
 				borderWidth: '1px',
@@ -87,8 +87,8 @@ export class UserDecoration {
 			});
 		}
 
-		const range_start: vscode.Position = new vscode.Position(event.startRow, event.startCol); // -1?
-		const range_end: vscode.Position = new vscode.Position(event.endRow, event.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
+		const range_start: vscode.Position = new vscode.Position(event.sel.startRow, event.sel.startCol); // -1?
+		const range_end: vscode.Position = new vscode.Position(event.sel.endRow, event.sel.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
 		const decorationRange = new vscode.Range(range_start, range_end);
 		if (editor !== undefined) {
 			editor.setDecorations(
