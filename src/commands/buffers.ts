@@ -37,7 +37,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 		})) {
 			continue;
 		}
-		else{
+		else {
 			controller.ack(event.version);
 		}
 		locks.delete(path);

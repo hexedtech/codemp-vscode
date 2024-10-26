@@ -118,24 +118,24 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		}
 	});
 
-	
+
 	workspaceState.workspace.callback(async function (controller: codemp.Workspace) {
-		while(true){
-		if (workspaceState.workspace === null) {
-			controller.clearCallback();
-			LOGGER.info("left workspace, stopping receiving events");
-			return;
-		}
-		let event = await workspaceState.workspace.tryRecv();
-		if (event === null) break;
-		if (event.type == "leave") {
-			mapping.colors_cache.get(event.value)?.clear()
-			mapping.colors_cache.delete(event.value);
-		}
-		if (event.type == "join") {
-			mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
-		}
-		provider.refresh();
+		while (true) {
+			if (workspaceState.workspace === null) {
+				controller.clearCallback();
+				LOGGER.info("left workspace, stopping receiving events");
+				return;
+			}
+			let event = await workspaceState.workspace.tryRecv();
+			if (event === null) break;
+			if (event.type == "leave") {
+				mapping.colors_cache.get(event.value)?.clear()
+				mapping.colors_cache.delete(event.value);
+			}
+			if (event.type == "join") {
+				mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
+			}
+			provider.refresh();
 		}
 	});
 

@@ -28,7 +28,7 @@ export async function jump(selected: vscode.TreeItem | undefined) {
 	}
 	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
 	if (!user) return;  // user cancelled with ESC
-	workspaceState.follow=user;
+	workspaceState.follow = user;
 	executeJump(user);
 }
 
