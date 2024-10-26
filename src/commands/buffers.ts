@@ -35,8 +35,10 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 			editBuilder
 				.replace(range, event.change.content)
 		})) {
-			vscode.window.showWarningMessage("Couldn't apply changes");
-			await resync(path, workspaceState.workspace, editor, 100);
+			continue;
+		}
+		else{
+			controller.ack(event.version);
 		}
 		locks.delete(path);
 
@@ -130,7 +132,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		for (let change of event.contentChanges) {
 			if (skip_this !== undefined && change.text == skip_this) continue;
 			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			buffer.send({
+			await buffer.send({
 				startIdx: change.rangeOffset,
 				endIdx: change.rangeOffset + change.rangeLength,
 				content: change.text
