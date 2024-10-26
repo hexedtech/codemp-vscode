@@ -96,7 +96,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		let buffer = mapping.bufferMapper.by_editor(buf);
 		if (buffer === undefined) {
 			if (once) {
-				await controller.send({
+				controller.send({
 					startRow: 0,
 					startCol: 0,
 					endRow: 0,
@@ -107,7 +107,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			once = false;
 		} else {
 
-			await controller.send({
+			controller.send({
 				startRow: selection.anchor.line,
 				startCol: selection.anchor.character,
 				endRow: selection.active.line,

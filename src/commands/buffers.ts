@@ -107,7 +107,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	if (set_content) {
 		// make remote document match local content
 		let doc_len = remoteContent.length;
-		await buffer.send({ startIdx: 0, endIdx: doc_len, content: localContent });
+		buffer.send({ startIdx: 0, endIdx: doc_len, content: localContent });
 	} else {
 		// make local document match remote content
 		let doc_len = localContent.length;
@@ -130,7 +130,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		for (let change of event.contentChanges) {
 			if (skip_this !== undefined && change.text == skip_this) continue;
 			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			await buffer.send({
+			buffer.send({
 				startIdx: change.rangeOffset,
 				endIdx: change.rangeOffset + change.rangeLength,
 				content: change.text
