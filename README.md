@@ -45,18 +45,22 @@ once connected, more commands become available:
 | `codemp.createWorkspace <workspace>` |  will create a new workspace with given name |
 | `codemp.listWorkspaces` |  list all workspaces available to join |
 | `codemp.activeWorkspaces` |  list all workspaces currently active |
-| `codemp.leaveWorkspace <workspace>` |  leave a currently active workspace |
 | `codemp.inviteToWorkspace <workspace> <user> ` |  invite a remote user to a workspace you own |
+| `codemp.deleteWorkspace` |  delete a workspace |
 
 after a workspace is joined, more commands become available:
 
 | command | description |
 | --- | --- |
+| `codemp.leaveWorkspace <workspace>` |  leave a currently active workspace |
 | `codemp.attach <buffer>` |  will fetch remote buffer and keep it in sync |
 | `codemp.share` |  will share current buffer and keep it in sync |
 | `codemp.createBuffer <bufname>` |  will create a new empty buffer in workspace |
 | `codemp.listBuffers` |  will list all available buffers in workspace |
+| `codemp.detach <buffer>` |  will detach from remote buffer |
+| `codemp.deleteBuffer <buffer>` |  will delete remote buffer |
 | `codemp.sync` |  forces resynchronization of current buffer |
+| `codemp.jump` |  jump to user's last cursor position |
 
 some commands for the Tree View are also provided:
 
