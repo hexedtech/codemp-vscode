@@ -145,6 +145,12 @@
         "icon": "$(arrow-down)"
       },
       {
+        "command": "codemp.deleteWorkspace",
+        "title": "Delete Workspace",
+        "category": "codemp",
+        "icon": "$(arrow-down)"
+      },
+      {
         "command": "codemp.createBuffer",
         "title": "Create Buffer",
         "category": "codemp",

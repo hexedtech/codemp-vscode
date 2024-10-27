@@ -187,6 +187,15 @@ export async function leave() {
 	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 }
 
+export async function deleteWorkspace() {
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter workspace's name to delete" });
+	if (workspace_id === undefined) return;
+	await client.deleteWorkspace(workspace_id);
+	vscode.window.showInformationMessage("Deleted workspace " + workspace_id);
+	listWorkspaces();
+}
+
 
 export async function refresh() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
