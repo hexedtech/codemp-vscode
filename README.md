@@ -46,7 +46,7 @@ once connected, more commands become available:
 | `codemp.listWorkspaces` |  list all workspaces available to join |
 | `codemp.activeWorkspaces` |  list all workspaces currently active |
 | `codemp.leaveWorkspace <workspace>` |  leave a currently active workspace |
-| `codemp.inviteToWorkspace <user> <workspace>` |  invite a remote user to a workspace you own |
+| `codemp.inviteToWorkspace <workspace> <user> ` |  invite a remote user to a workspace you own |
 
 after a workspace is joined, more commands become available:
 
