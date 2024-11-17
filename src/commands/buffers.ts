@@ -30,15 +30,6 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 			editor.document.positionAt(event.change.endIdx)
 		)
 
-		locks.set(path, event.change.content);
-		let success = await editor.edit(editBuilder => {
-			editBuilder
-				.replace(range, event.change.content)
-		});
-		if(success) controller.ack(event.version);
-		locks.delete(path);
-		if(!success) continue;
-
 		if (event.hash !== undefined) {
 			if (codemp.hash(editor.document.getText()) !== event.hash) {
 				if (autoResync) {
@@ -56,6 +47,17 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 				}
 			}
 		}
+
+		locks.set(path, event.change.content);
+		let success = await editor.edit(editBuilder => {
+			editBuilder
+				.replace(range, event.change.content)
+		});
+		if(success) controller.ack(event.version);
+		locks.delete(path);
+		if(!success) continue;
+
+
 	}
 	singles.set(path, false);
 }
