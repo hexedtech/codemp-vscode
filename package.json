@@ -6,7 +6,7 @@
   "homepage": "https://code.mp",
   "repository": "https://github.com/hexedtech/codemp-vscode",
   "publisher": "hexedtech",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engines": {
     "vscode": "^1.81.0"
   },
@@ -15,18 +15,18 @@
     "theme": "dark"
   },
   "keywords": [
-  	"codemp",
-  	"collaborative",
-  	"editing",
-  	"multiplatform",
-  	"live",
-  	"development"
+    "codemp",
+    "collaborative",
+    "editing",
+    "multiplatform",
+    "live",
+    "development"
   ],
   "categories": [
-  "SCM Providers",
-  "Visualization",
-  "Programming Languages",
-  "Other"
+    "SCM Providers",
+    "Visualization",
+    "Programming Languages",
+    "Other"
   ],
   "activationEvents": [
     "onCommand:extension.openMyExtension"
@@ -34,21 +34,20 @@
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
-    "activitybar": [
-      {
-        "id": "codemp-tree-container",
-        "title": "codemp",
-        "icon": "resources/logo.svg"
-      }
-    ]
+      "activitybar": [
+        {
+          "id": "codemp-tree-container",
+          "title": "codemp",
+          "icon": "resources/logo.svg"
+        }
+      ]
     },
     "viewsWelcome": [
       {
         "view": "codemp-tree-view",
         "contents": "codemp -- [code multiplexer](https://code.mp)\n[Connect](command:codemp.connect)"
-      } 
+      }
     ],
-    
     "views": {
       "codemp-tree-container": [
         {
@@ -57,7 +56,6 @@
         }
       ]
     },
-
     "menus": {
       "view/title": [
         {
@@ -94,7 +92,6 @@
         }
       ]
     },
-
     "commands": [
       {
         "command": "codemp.connect",
@@ -175,7 +172,6 @@
         "icon": "$(arrow-down)"
       },
       {
-
         "command": "codemp.sync",
         "title": "Sync",
         "category": "codemp",
@@ -192,8 +188,7 @@
         "title": "Jump",
         "category": "codemp",
         "icon": "$(debug-console-evaluation-input)"
-      }
-      ,
+      },
       {
         "command": "codemp.follow",
         "title": "Follow User",
@@ -262,6 +257,6 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
-    "codemp": "^0.8.2"
+    "codemp": "^0.8.4"
   }
 }
