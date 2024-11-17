@@ -1,12 +1,6 @@
 .vscode
-
-
 node_modules
-package-lock.json
-
 target
-Cargo.lock
-codemp.node
 index.d.ts
 index.node
 out
