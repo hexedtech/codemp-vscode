@@ -150,7 +150,9 @@ export async function join(selected: vscode.TreeItem | undefined) {
 
 export async function listWorkspaces() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	workspace_list = await client.fetchJoinedWorkspaces();
+	let workspace_joined = await client.fetchJoinedWorkspaces();
+	let workspace_owned = await client.fetchOwnedWorkspaces();
+	workspace_list = workspace_owned.concat(workspace_joined);
 	provider.refresh();
 }
 
