@@ -21,42 +21,57 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 	async getChildren(element?: CodempTreeItem): Promise<CodempTreeItem[]> {
 		if (element) {
 			switch (element.type) {
-				case Type.Workspace:
-					if (workspaceState.workspace === null) return [];
-					else if (element.label == workspaceState.workspace.id()) {
-						return workspaceState.workspace.searchBuffers().map((x) =>
-							new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
-						);
-					} else return [];
+				case Type.CurrentWorkspace:
+					if (workspaceState.workspace === null) return []; // TODO ???? error maybe ???
+					let items = workspaceState.workspace.searchBuffers().map((x) =>
+						new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
+					);
+					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }))
+					items.push(new CodempTreeItem("Users", Type.UserContainer, { expandable: true }));
+					return items;
 
-				case Type.UserList: // asdasd
+				case Type.WorkspaceContainer:
+					let active = workspaceState.workspace === null;
+					return workspace_list
+						.filter((x) => workspaceState.workspace == null || x != workspaceState.workspace.id())
+						.map((x) => new CodempTreeItem(x, Type.Workspace, { expandable: false, active: active }));
+
+				case Type.UserContainer:
 					let out = [];
 					for (let x of colors_cache) {
 						out.push(new CodempTreeItem(x[0], Type.User, { description: x[1].buffer }));
 					};
 					return out;
 
-				case Type.Buffer:
-					return [];
+				case Type.ClientContainer:
+					let info = [];
+					if (client === null) return [];
+					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: client.currentUser().name }));
+					info.push(new CodempTreeItem("uuid", Type.ClientInfo, { description: client.currentUser().uuid }));
+					return info;
 
+				case Type.Placeholder:
 				case Type.User:
+				case Type.Buffer:
+				case Type.Workspace:
+				case Type.ClientInfo:
+				// default:
 					return [];
 			}
-			return [];
 		} else {
 			if (client === null) {
 				return []; // empty screen with [connect] button
 			}
-			let items = workspace_list.map((x) =>
-				new CodempTreeItem(x, Type.Workspace, { expandable: true, active: workspaceState.workspace === null })
-			);
+
+			let items = [];
+
 			if (workspaceState.workspace !== null) {
-				items.push(new CodempTreeItem("", Type.Placeholder, {}));
-				items.push(new CodempTreeItem("Users", Type.UserList, { expandable: true }));
+				items.push(new CodempTreeItem(workspaceState.workspace.id(), Type.CurrentWorkspace, { expandable: true }));
 			}
-			if (items.length == 0) {
-				items.push(new CodempTreeItem("No workspaces", Type.Placeholder, {}));
-			}
+
+			items.push(new CodempTreeItem("", Type.WorkspaceContainer, { expandable: true }));
+			items.push(new CodempTreeItem("Client", Type.ClientContainer, { expandable: true }));
+
 			return items;
 		}
 	}
@@ -71,17 +86,25 @@ class CodempTreeItem extends vscode.TreeItem {
 		this.contextValue = type;
 		this.description = opts.description || "";
 		if (opts.active) this.contextValue += "_active";
-		if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon(opts.active ? "timeline-pin" : "extensions-remote");
+		if (type === Type.WorkspaceContainer) this.iconPath = new vscode.ThemeIcon("extensions-remote");
+		else if (type === Type.UserContainer) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
+		else if (type === Type.ClientContainer) this.iconPath = new vscode.ThemeIcon("");
+		else if (type === Type.ClientInfo) this.iconPath = new vscode.ThemeIcon("");
+		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("timeline-pin");
+		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("timeline-pin");
 		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-restart-frame" : "debug-console-clear-all");
-		else if (type === Type.UserList) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
 		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
 	}
 }
 
 enum Type {
+	WorkspaceContainer = "workspace_container",
+	UserContainer = "user_container",
+	ClientContainer = "client_container",
+	ClientInfo = "client_info",
+	CurrentWorkspace = "current_workspace",
 	Workspace = "workspace",
-	UserList = "user_list",
 	Buffer = "buffer",
 	User = "user",
-	Placeholder = "placeholder"
+	Placeholder = "placeholder",
 }
