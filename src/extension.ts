@@ -12,9 +12,12 @@ export let LOGGER = vscode.window.createOutputChannel("codemp", { log: true });
 
 // extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	let config = vscode.workspace.getConfiguration('codemp');
+	let debug = config.get<boolean>("debug");
+
 	// start codemp log poller
 
-	log_poller_task(new codemp.JsLogger()); // don't await it! run it in background forever
+	log_poller_task(new codemp.JsLogger(debug)); // don't await it! run it in background forever
 	let sub = vscode.window.registerTreeDataProvider('codemp-tree-view', provider);
 	context.subscriptions.push(sub);
 

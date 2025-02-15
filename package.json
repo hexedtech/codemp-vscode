@@ -233,6 +233,11 @@
           "type": "boolean",
           "default": false,
           "description": "Whether to auto resync current buffer or not when out of sync"
+        },
+        "codemp.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging"
         }
       }
     }
