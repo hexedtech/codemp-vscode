@@ -26,10 +26,9 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					let items = workspaceState.workspace.searchBuffers().map((x) =>
 						new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 					);
-					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }))
+					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }));
 					items.push(new CodempTreeItem("Users", Type.UserContainer, { expandable: true }));
 					return items;
-
 				case Type.WorkspaceContainer:
 					let active = workspaceState.workspace === null;
 					return workspace_list
@@ -67,9 +66,11 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 			if (workspaceState.workspace !== null) {
 				items.push(new CodempTreeItem(workspaceState.workspace.id(), Type.CurrentWorkspace, { expandable: true }));
+				items.push(new CodempTreeItem("", Type.Placeholder, {}));
 			}
 
-			items.push(new CodempTreeItem("", Type.WorkspaceContainer, { expandable: true }));
+			items.push(new CodempTreeItem("Workspaces", Type.WorkspaceContainer, { expandable: true }));
+			items.push(new CodempTreeItem("", Type.Placeholder, {}));
 			items.push(new CodempTreeItem("Client", Type.ClientContainer, { expandable: true }));
 
 			return items;
