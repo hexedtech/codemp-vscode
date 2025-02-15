@@ -58,33 +58,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	}
 	workspaceState.workspace = await client.attachWorkspace(workspace_id);
 	let controller = workspaceState.workspace.cursor();
-	controller.callback(async function (controller: codemp.CursorController) {
-		while (true) {
-			let event = await controller.tryRecv();
-			if (workspaceState.workspace === null) {
-				controller.clearCallback();
-				LOGGER.info("left workspace, stopping cursor controller");
-				return;
-			}
-			if (event === null) break;
-			if (event.user === undefined) {
-				LOGGER.warn(`Skipping cursor event without user: ${event}`)
-				continue;
-			}
-			let mapp = mapping.colors_cache.get(event.user);
-			if (mapp === undefined) { // first time we see this user
-				mapp = new mapping.UserDecoration(event.user);
-				mapping.colors_cache.set(event.user, mapp);
-				provider.refresh();
-			}
-
-			let editor = mapping.bufferMapper.visible_by_buffer(event.sel.buffer);
-			let refresh = event.sel.buffer != mapp.buffer;
-			mapp.update(event, editor);
-			if (workspaceState.follow === event.user) executeJump(event.user);
-			if (refresh) provider.refresh();
-		}
-	});
+	controller.callback(cursor_callback);
 
 	let once = true;
 	cursor_disposable = vscode.window.onDidChangeTextEditorSelection(async (event: vscode.TextEditorSelectionChangeEvent) => {
@@ -118,26 +92,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		}
 	});
 
-
-	workspaceState.workspace.callback(async function (controller: codemp.Workspace) {
-		while (true) {
-			if (workspaceState.workspace === null) {
-				controller.clearCallback();
-				LOGGER.info("left workspace, stopping receiving events");
-				return;
-			}
-			let event = await workspaceState.workspace.tryRecv();
-			if (event === null) break;
-			if (event.type == "leave") {
-				mapping.colors_cache.get(event.value)?.clear()
-				mapping.colors_cache.delete(event.value);
-			}
-			if (event.type == "join") {
-				mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
-			}
-			provider.refresh();
-		}
-	});
+	workspaceState.workspace.callback(workspace_callback);
 
 	for (let user of workspaceState.workspace.userList()) {
 		mapping.colors_cache.set(user.name, new mapping.UserDecoration(user.name));
@@ -145,6 +100,54 @@ export async function join(selected: vscode.TreeItem | undefined) {
 
 	vscode.window.showInformationMessage("Connected to workspace");
 	provider.refresh();
+}
+
+async function workspace_callback(controller: codemp.Workspace) {
+	while (true) {
+		if (workspaceState.workspace === null) {
+			controller.clearCallback();
+			LOGGER.info("left workspace, stopping receiving events");
+			return;
+		}
+		let event = await workspaceState.workspace.tryRecv();
+		if (event === null) break;
+		if (event.type == "leave") {
+			mapping.colors_cache.get(event.value)?.clear()
+			mapping.colors_cache.delete(event.value);
+		}
+		if (event.type == "join") {
+			mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
+		}
+		provider.refresh();
+	}
+}
+
+async function cursor_callback(controller: codemp.CursorController) {
+	while (true) {
+		let event = await controller.tryRecv();
+		if (workspaceState.workspace === null) {
+			controller.clearCallback();
+			LOGGER.info("left workspace, stopping cursor controller");
+			return;
+		}
+		if (event === null) break;
+		if (event.user === undefined) {
+			LOGGER.warn(`Skipping cursor event without user: ${event}`)
+			continue;
+		}
+		let mapp = mapping.colors_cache.get(event.user);
+		if (mapp === undefined) { // first time we see this user
+			mapp = new mapping.UserDecoration(event.user);
+			mapping.colors_cache.set(event.user, mapp);
+			provider.refresh();
+		}
+
+		let editor = mapping.bufferMapper.visible_by_buffer(event.sel.buffer);
+		let refresh = event.sel.buffer != mapp.buffer;
+		mapp.update(event, editor);
+		if (workspaceState.follow === event.user) executeJump(event.user);
+		if (refresh) provider.refresh();
+	}
 }
 
 
