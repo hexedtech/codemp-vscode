@@ -1,23 +1,19 @@
 import * as vscode from 'vscode';
-import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import { client } from "./client"
-import { LOGGER, provider } from '../extension';
+import { COC, provider } from '../extension';
 
 
 export let workspaceState: {
-	workspace: codemp.Workspace | null,
 	follow: string | null,
 	justJumped: boolean,
 } = {
-	workspace: null,
 	follow: null,
 	justJumped: false,
 };
 
 
 export async function jump(selected: vscode.TreeItem | undefined) {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
 	let user;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof (selected.label) === 'string') {
@@ -52,23 +48,23 @@ export async function executeJump(user: string) {
 
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.createBuffer(bufferName);
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Join a workspace first");
+	await COC.workspace().createBuffer(bufferName);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 	provider.refresh();
 }
 
 export async function listBuffers() {
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	let buffers = workspaceState.workspace.searchBuffers();
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Join a workspace first");
+	let buffers = COC.workspace().searchBuffers();
 	vscode.window.showInformationMessage(buffers.join("\n"));
 	provider.refresh();
 }
 
 export async function deleteBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to delete" }));
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.deleteBuffer(bufferName);
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Join a workspace first");
+	await COC.workspace().deleteBuffer(bufferName);
 	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
 	provider.refresh();
 }

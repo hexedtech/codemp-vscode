@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { client, workspace_list } from './commands/client';
-import { workspaceState } from './commands/workspaces';
+import { workspace_list } from './commands/client';
 import { bufferMapper, colors_cache } from './mapping';
+import { COC } from "./extension";
 
 export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeItem> {
 
@@ -22,17 +22,17 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 		if (element) {
 			switch (element.type) {
 				case Type.CurrentWorkspace:
-					if (workspaceState.workspace === null) return []; // TODO ???? error maybe ???
-					let items = workspaceState.workspace.searchBuffers().map((x) =>
+					if (!COC.has_workspace()) return [];
+					let items = COC.workspace().searchBuffers().map((x) =>
 						new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
 					);
 					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }));
 					items.push(new CodempTreeItem("Users", Type.UserContainer, { expandable: true }));
 					return items;
 				case Type.WorkspaceContainer:
-					let active = workspaceState.workspace === null;
+					let active = !COC.has_workspace();
 					return workspace_list
-						.filter((x) => workspaceState.workspace == null || x != workspaceState.workspace.id())
+						.filter((x) => x != COC.workspace().id())
 						.map((x) => new CodempTreeItem(x, Type.Workspace, { expandable: false, active: active }));
 
 				case Type.UserContainer:
@@ -44,9 +44,9 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 				case Type.ClientContainer:
 					let info = [];
-					if (client === null) return [];
-					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: client.currentUser().name }));
-					info.push(new CodempTreeItem("uuid", Type.ClientInfo, { description: client.currentUser().uuid }));
+					if (!COC.has_client()) return [];
+					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: COC.client().currentUser().name }));
+					info.push(new CodempTreeItem("uuid", Type.ClientInfo, { description: COC.client().currentUser().uuid }));
 					return info;
 
 				case Type.Placeholder:
@@ -58,14 +58,14 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					return [];
 			}
 		} else {
-			if (client === null) {
+			if (!COC.has_client()) {
 				return []; // empty screen with [connect] button
 			}
 
 			let items = [];
 
-			if (workspaceState.workspace !== null) {
-				items.push(new CodempTreeItem(workspaceState.workspace.id(), Type.CurrentWorkspace, { expandable: true }));
+			if (COC.has_workspace()) {
+				items.push(new CodempTreeItem(COC.workspace().id(), Type.CurrentWorkspace, { expandable: true }));
 				items.push(new CodempTreeItem("", Type.Placeholder, {}));
 			}
 

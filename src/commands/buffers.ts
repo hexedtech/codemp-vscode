@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import { workspaceState } from "./workspaces";
-import { LOGGER, provider } from '../extension';
+import { COC, LOGGER, provider } from '../extension';
 
 let singles: Map<string, boolean> = new Map();
 let locks: Map<string, string> = new Map();
@@ -16,7 +15,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 
 	singles.set(path, true);
 	while (true) {
-		if (workspaceState.workspace === null) {
+		if (!COC.has_workspace()) {
 			LOGGER.info(`left workspace, unregistering buffer controller '${path}' callback`);
 			controller.clearCallback();
 			return;
@@ -34,12 +33,12 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 			if (codemp.hash(editor.document.getText()) !== event.hash) {
 				if (autoResync) {
 					vscode.window.showWarningMessage("Out of Sync, resynching...");
-					await resync(path, workspaceState.workspace, editor, 20);
+					await resync(path, COC.workspace(), editor, 20);
 				} else {
 					controller.clearCallback();
 					const selection = await vscode.window.showWarningMessage('Out of Sync', 'Resync');
-					if (selection !== undefined && workspaceState.workspace) {
-						await resync(path, workspaceState.workspace, editor, 20);
+					if (selection !== undefined && COC.workspace()) {
+						await resync(path, COC.workspace(), editor, 20);
 						controller.callback(async (controller: codemp.BufferController) =>
 							await apply_changes_to_buffer(controller.path(), controller)
 						);
@@ -63,7 +62,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 }
 
 export async function attach_to_remote_buffer(buffer_name: string, set_content?: boolean): Promise<codemp.BufferController | undefined> {
-	if (workspaceState.workspace === null) {
+	if (!COC.has_workspace()) {
 		vscode.window.showErrorMessage("join a Workspace first");
 		return;
 	}
@@ -87,7 +86,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 	let doc = await vscode.workspace.openTextDocument(path);
 	let editor = await vscode.window.showTextDocument(doc, { preserveFocus: false })
 	await editor.edit((editor) => editor.setEndOfLine(vscode.EndOfLine.LF)); // set LF for EOL sequence
-	let buffer: codemp.BufferController = await workspaceState.workspace.attachBuffer(buffer_name);
+	let buffer: codemp.BufferController = await COC.workspace().attachBuffer(buffer_name);
 
 	// wait for server changes
 	// TODO poll never unblocks, so this dirty fix is necessary
@@ -149,7 +148,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 }
 
 export async function attach(selected: vscode.TreeItem | undefined) {
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof (selected.label) === 'string') {
@@ -158,14 +157,14 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.searchBuffers(), { placeHolder: "buffer to attach to:" }, undefined);
+		buffer_name = await vscode.window.showQuickPick(COC.workspace().searchBuffers(), { placeHolder: "buffer to attach to:" }, undefined);
 	}
 	if (!buffer_name) return;
 	await attach_to_remote_buffer(buffer_name);
 }
 
 export async function detach(selected: vscode.TreeItem | undefined) {
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Not in a workspace");
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Not in a workspace");
 	let buffer_name: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof (selected.label) === 'string') {
@@ -174,12 +173,12 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.activeBuffers(), { placeHolder: "buffer to detach from:" }, undefined);
+		buffer_name = await vscode.window.showQuickPick(COC.workspace().activeBuffers(), { placeHolder: "buffer to detach from:" }, undefined);
 	}
 	if (!buffer_name) return;
-	let controller = workspaceState.workspace.getBuffer(buffer_name);
+	let controller = COC.workspace().getBuffer(buffer_name);
 	if (controller) controller.clearCallback();
-	workspaceState.workspace.detachBuffer(buffer_name);
+	COC.workspace().detachBuffer(buffer_name);
 	mapping.bufferMapper.remove(buffer_name);
 	vscode.window.showInformationMessage(`Detached from buffer ${buffer_name}`)
 	provider.refresh();
@@ -187,7 +186,7 @@ export async function detach(selected: vscode.TreeItem | undefined) {
 
 
 export async function share() {
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	if (!COC.workspace()) return vscode.window.showWarningMessage("Join a workspace first");
 	let buffer_name: string | undefined;
 	if (vscode.window.activeTextEditor !== null) {
 		buffer_name = vscode.window.activeTextEditor?.document.uri.toString();
@@ -199,12 +198,12 @@ export async function share() {
 	let workspacePath: string = vscode.workspace.workspaceFolders[0].uri.toString();
 	buffer_name = buffer_name.replace(workspacePath, "").substring(1); //vscode.workspace.asRelativePath doesn't work properly with other extensions like ssh, substring(1) to remove "/"
 	console.log("After: " + buffer_name);
-	await workspaceState.workspace.createBuffer(buffer_name);
+	await COC.workspace().createBuffer(buffer_name);
 	await attach_to_remote_buffer(buffer_name, true);
 }
 
 export async function sync(selected: vscode.TreeItem | undefined) {
-	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	if (!COC.has_workspace()) return vscode.window.showWarningMessage("Join a workspace first");
 	let editor;
 	let buffer_name;
 	if (selected !== undefined && selected.label !== undefined) {
@@ -222,7 +221,7 @@ export async function sync(selected: vscode.TreeItem | undefined) {
 		if (buffer_name === undefined) return vscode.window.showWarningMessage("Buffer not synched with codemp");
 	}
 
-	resync(buffer_name, workspaceState.workspace, editor);
+	resync(buffer_name, COC.workspace(), editor);
 }
 
 export async function resync(buffer_name: string, workspace: codemp.Workspace, editor: vscode.TextEditor, tries?: number) {

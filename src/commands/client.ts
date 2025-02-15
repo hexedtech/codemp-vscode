@@ -2,11 +2,10 @@ import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
 import { executeJump, workspaceState } from "./workspaces";
-import { LOGGER, provider } from '../extension';
+import { COC, LOGGER, provider } from '../extension';
 
 
 // TODO this "global state" should probably live elsewher but we need lo update it from these commands
-export let client: codemp.Client | null = null;
 export let workspace_list: string[] = [];
 export let cursor_disposable: vscode.Disposable | null;
 
@@ -24,13 +23,13 @@ export async function connect() {
 	}
 
 	try {
-		client = await codemp.connect({
+		COC.set_client(await codemp.connect({
 			username: username,
 			password: password,
 			host: config.get<string>("server"),
 			port: config.get<number>("port"),
 			tls: config.get<boolean>("tls"),
-		});
+		}));
 		vscode.window.showInformationMessage("Connected to codemp");
 		provider.refresh();
 		listWorkspaces(); // dont await, run in background
@@ -40,7 +39,7 @@ export async function connect() {
 }
 
 export async function join(selected: vscode.TreeItem | undefined) {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	if (COC.has_client()) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id: string | undefined;
 	if (selected !== undefined && selected.label !== undefined) {
 		if (typeof (selected.label) === 'string') {
@@ -56,8 +55,8 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		let ws = await vscode.window.showWorkspaceFolderPick({ placeHolder: "directory to open workspace into:" });
 		if (ws === undefined) return vscode.window.showErrorMessage("Open a Workspace folder first");
 	}
-	workspaceState.workspace = await client.attachWorkspace(workspace_id);
-	let controller = workspaceState.workspace.cursor();
+	COC.set_workspace(await COC.client().attachWorkspace(workspace_id));
+	let controller = COC.workspace().cursor();
 	controller.callback(cursor_callback);
 
 	let once = true;
@@ -92,9 +91,9 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		}
 	});
 
-	workspaceState.workspace.callback(workspace_callback);
+	COC.workspace().callback(workspace_callback);
 
-	for (let user of workspaceState.workspace.userList()) {
+	for (let user of COC.workspace().userList()) {
 		mapping.colors_cache.set(user.name, new mapping.UserDecoration(user.name));
 	}
 
@@ -104,12 +103,12 @@ export async function join(selected: vscode.TreeItem | undefined) {
 
 async function workspace_callback(controller: codemp.Workspace) {
 	while (true) {
-		if (workspaceState.workspace === null) {
+		if (!COC.has_workspace()) {
 			controller.clearCallback();
 			LOGGER.info("left workspace, stopping receiving events");
 			return;
 		}
-		let event = await workspaceState.workspace.tryRecv();
+		let event = await COC.workspace().tryRecv();
 		if (event === null) break;
 		if (event.type == "leave") {
 			mapping.colors_cache.get(event.value)?.clear()
@@ -125,7 +124,7 @@ async function workspace_callback(controller: codemp.Workspace) {
 async function cursor_callback(controller: codemp.CursorController) {
 	while (true) {
 		let event = await controller.tryRecv();
-		if (workspaceState.workspace === null) {
+		if (!COC.has_workspace()) {
 			controller.clearCallback();
 			LOGGER.info("left workspace, stopping cursor controller");
 			return;
@@ -152,9 +151,9 @@ async function cursor_callback(controller: codemp.CursorController) {
 
 
 export async function listWorkspaces() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let workspace_joined = await client.fetchJoinedWorkspaces();
-	let workspace_owned = await client.fetchOwnedWorkspaces();
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
+	let workspace_joined = await COC.client().fetchJoinedWorkspaces();
+	let workspace_owned = await COC.client().fetchOwnedWorkspaces();
 	workspace_list = workspace_owned.concat(workspace_joined);
 	provider.refresh();
 }
@@ -162,49 +161,49 @@ export async function listWorkspaces() {
 
 
 export async function createWorkspace() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter name for workspace" });
 	if (workspace_id === undefined) return;
-	await client.createWorkspace(workspace_id);
+	await COC.client().createWorkspace(workspace_id);
 	vscode.window.showInformationMessage("Created new workspace " + workspace_id);
 	listWorkspaces();
 }
 
 export async function inviteToWorkspace() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showQuickPick(workspace_list, { placeHolder: "workspace to invite to:" });
 	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Name of user to invite" });
 	if (user_id === undefined) return;
-	await client.inviteToWorkspace(workspace_id, user_id);
+	await COC.client().inviteToWorkspace(workspace_id, user_id);
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 
 export async function leave() {
-	if (!client) throw "can't leave while disconnected";
-	if (!workspaceState.workspace) throw "can't leave while not in a workspace";
-	workspaceState.workspace.cursor().clearCallback()
-	client.leaveWorkspace(workspaceState.workspace.id());
+	if (!COC.has_client()) throw "can't leave while disconnected";
+	if (!COC.has_workspace()) throw "can't leave while not in a workspace";
+	COC.workspace().cursor().clearCallback()
+	COC.client().leaveWorkspace(COC.workspace().id());
 	if (cursor_disposable !== null) cursor_disposable.dispose();
-	let workspace_id = workspaceState.workspace.id();
-	workspaceState.workspace = null;
+	let workspace_id = COC.workspace().id();
+	COC.clear_workspace();
 	provider.refresh();
 	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 }
 
 export async function deleteWorkspace() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
 	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter workspace's name to delete" });
 	if (workspace_id === undefined) return;
-	await client.deleteWorkspace(workspace_id);
+	await COC.client().deleteWorkspace(workspace_id);
 	vscode.window.showInformationMessage("Deleted workspace " + workspace_id);
 	listWorkspaces();
 }
 
 
 export async function refresh() {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	await client.refresh();
+	if (!COC.has_client()) return vscode.window.showWarningMessage("Connect first");
+	await COC.client().refresh();
 	vscode.window.showInformationMessage("Refreshed Session token");
 }
 
