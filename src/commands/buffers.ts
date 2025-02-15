@@ -131,7 +131,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		for (let change of event.contentChanges) {
 			if (skip_this !== undefined && change.text == skip_this) continue;
 			// LOGGER.info(`onDidChangeTextDocument(event: [${change.rangeOffset}, ${change.text}, ${change.rangeOffset + change.rangeLength}])`);
-			await buffer.send({
+			buffer.send({
 				startIdx: change.rangeOffset,
 				endIdx: change.rangeOffset + change.rangeLength,
 				content: change.text
