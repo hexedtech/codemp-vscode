@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
-import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave, deleteWorkspace } from './commands/client';
+import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave, deleteWorkspace, version } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
 import { workspaceState, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
@@ -47,6 +47,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.sync', sync),
 		vscode.commands.registerCommand('codemp.refresh', refresh),
 		vscode.commands.registerCommand('codemp.jump', jump),
+		vscode.commands.registerCommand('codemp.version', version),
 	]) {
 		context.subscriptions.push(cmd);
 	}

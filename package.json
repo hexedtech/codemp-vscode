@@ -194,6 +194,11 @@
         "title": "Follow User",
         "category": "codemp",
         "icon": "$(debug-console-evaluation-input)"
+      },
+      {
+        "command": "codemp.version",
+        "title": "Display codemp version",
+        "category": "codemp"
       }
     ],
     "configuration": {

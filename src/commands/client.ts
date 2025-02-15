@@ -205,5 +205,9 @@ export async function refresh() {
 	vscode.window.showInformationMessage("Refreshed Session token");
 }
 
+export async function version(){
+	vscode.window.showInformationMessage(`Version: ${codemp.version()}`);
+}
+
 
 
