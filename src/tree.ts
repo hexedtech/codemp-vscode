@@ -46,7 +46,11 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					let info = [];
 					if (client === null) return [];
 					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: client.currentUser().name }));
-					info.push(new CodempTreeItem("uuid", Type.ClientInfo, { description: client.currentUser().uuid }));
+					info.push(Object.assign(new CodempTreeItem("uuid", Type.ClientInfo, {}), {
+						description: client.currentUser().uuid,
+						tooltip: `UUID: ${client.currentUser().uuid}`
+
+					}));
 					return info;
 
 				case Type.Placeholder:
@@ -89,12 +93,12 @@ class CodempTreeItem extends vscode.TreeItem {
 		if (opts.active) this.contextValue += "_active";
 		if (type === Type.WorkspaceContainer) this.iconPath = new vscode.ThemeIcon("extensions-remote");
 		else if (type === Type.UserContainer) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
-		else if (type === Type.ClientContainer) this.iconPath = new vscode.ThemeIcon("");
-		else if (type === Type.ClientInfo) this.iconPath = new vscode.ThemeIcon("");
-		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("timeline-pin");
-		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("timeline-pin");
-		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-restart-frame" : "debug-console-clear-all");
-		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
+		else if (type === Type.ClientContainer) this.iconPath = new vscode.ThemeIcon("broadcast");
+		else if (type === Type.ClientInfo) this.iconPath = new vscode.ThemeIcon("chip");
+		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data");
+		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
+		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-breakpoint-log" : "debug-breakpoint-log-unverified");
+		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-disabled");
 	}
 }
 
