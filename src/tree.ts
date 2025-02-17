@@ -96,9 +96,9 @@ class CodempTreeItem extends vscode.TreeItem {
 		else if (type === Type.ClientContainer) this.iconPath = new vscode.ThemeIcon("broadcast");
 		else if (type === Type.ClientInfo) this.iconPath = new vscode.ThemeIcon("chip");
 		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data");
-		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
-		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-breakpoint-log" : "debug-breakpoint-log-unverified");
-		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-disabled");
+		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-disabled");
+		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-breakpoint-log" : "debug-breakpoint-log-disabled");
+		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint");
 	}
 }
 
