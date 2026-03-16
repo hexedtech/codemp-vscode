@@ -32,8 +32,12 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.WorkspaceContainer:
 					let active = workspaceState.workspace === null;
 					return workspace_list
-						.filter((x) => workspaceState.workspace == null || x != workspaceState.workspace.id())
-						.map((x) => new CodempTreeItem(x, Type.Workspace, { expandable: false, active: active }));
+						.filter((x) => (
+							workspaceState.workspace == null || (
+								x.user != workspaceState.workspace.id().user && x.workspace != workspaceState.workspace.id().workspace
+							)
+						))
+						.map((x) => new CodempTreeItem(`${x.user}/${x.workspace}`, Type.Workspace, { expandable: false, active: active }));
 
 				case Type.UserContainer:
 					let out = [];
@@ -47,8 +51,8 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 					if (client === null) return [];
 					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: client.currentUser().name }));
 					info.push(Object.assign(new CodempTreeItem("uuid", Type.ClientInfo, {}), {
-						description: client.currentUser().uuid,
-						tooltip: `UUID: ${client.currentUser().uuid}`
+						description: client.currentUser().name,
+						tooltip: `display name: ${client.currentUser().displayName ?? ""}`
 
 					}));
 					return info;
@@ -69,7 +73,8 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 			let items = [];
 
 			if (workspaceState.workspace !== null) {
-				items.push(new CodempTreeItem(workspaceState.workspace.id(), Type.CurrentWorkspace, { expandable: true }));
+				let wsid = workspaceState.workspace.id();
+				items.push(new CodempTreeItem(`${wsid.user}/${wsid.workspace}`, Type.CurrentWorkspace, { expandable: true }));
 				items.push(new CodempTreeItem("", Type.Placeholder, {}));
 			}
 

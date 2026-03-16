@@ -40,7 +40,7 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 					const selection = await vscode.window.showWarningMessage('Out of Sync', 'Resync');
 					if (selection !== undefined && workspaceState.workspace) {
 						await resync(path, workspaceState.workspace, editor, 20);
-						controller.callback(async (controller: codemp.BufferController) =>
+						controller.callback(async (err: Error|null, controller: codemp.BufferController) =>
 							await apply_changes_to_buffer(controller.path(), controller)
 						);
 					}
@@ -139,7 +139,7 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		}
 	});
 
-	buffer.callback(async (controller: codemp.BufferController) =>
+	buffer.callback(async (error: Error|null, controller: codemp.BufferController) =>
 		await apply_changes_to_buffer(controller.path(), controller)
 	);
 
@@ -199,7 +199,7 @@ export async function share() {
 	let workspacePath: string = vscode.workspace.workspaceFolders[0].uri.toString();
 	buffer_name = buffer_name.replace(workspacePath, "").substring(1); //vscode.workspace.asRelativePath doesn't work properly with other extensions like ssh, substring(1) to remove "/"
 	console.log("After: " + buffer_name);
-	await workspaceState.workspace.createBuffer(buffer_name);
+	await workspaceState.workspace.createBuffer(buffer_name, false);
 	await attach_to_remote_buffer(buffer_name, true);
 }
 

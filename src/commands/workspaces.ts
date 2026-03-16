@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
 import { client } from "./client"
-import { LOGGER, provider } from '../extension';
+import { provider } from '../extension';
 
 
 export let workspaceState: {
@@ -53,7 +53,7 @@ export async function executeJump(user: string) {
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.createBuffer(bufferName);
+	await workspaceState.workspace.createBuffer(bufferName, false);
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 	provider.refresh();
 }

@@ -1,6 +1,3 @@
 .vscode
 node_modules
-target
-index.d.ts
-index.node
 out

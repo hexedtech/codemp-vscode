@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
+import { LOGGER } from './extension';
 
 class BufferMapper {
 	bufferToEditorMapping: Map<string, vscode.Uri> = new Map();
@@ -54,9 +55,11 @@ export class UserDecoration {
 	startCol: number;
 	endRow: number;
 	endCol: number;
+	name: string;
 
 	public constructor(name: string) {
 		let hash = codemp.hash(name);
+		this.name = name;
 		this.color = colors[Math.abs(hash) % colors.length];
 		this.decoration = null;
 		this.buffer = "";
@@ -67,34 +70,39 @@ export class UserDecoration {
 	}
 
 	// TODO can we avoid disposing and recreating the decoration type every time?
-	public update(event: codemp.Cursor, editor?: vscode.TextEditor) {
-		this.buffer = event.sel.buffer;
-		this.startRow = event.sel.startRow;
-		this.startCol = event.sel.startCol;
-		this.endRow = event.sel.endRow;
-		this.endCol = event.sel.endCol;
-		if (this.decoration == null) {
-			this.decoration = vscode.window.createTextEditorDecorationType({
-				borderWidth: '1px',
-				borderStyle: 'solid',
-				borderColor: this.color,
-				backgroundColor: this.color + '44', // add alpha
-				border: "1px",
-				//isWholeLine: true
-				overviewRulerLane: vscode.OverviewRulerLane.Right,
-				rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+	public update(event: codemp.CursorUpdate, editor?: vscode.TextEditor) {
+		if (event.cursors.length) {
+			// TODO include all cursors...
+			let sel = event.cursors[0];
+			this.buffer = event.buffer;
+			this.startRow = sel.start.row;
+			this.startCol = sel.start.col;
+			this.endRow = sel.finish.row;
+			this.endCol = sel.finish.col;
 
-			});
-		}
+			if (this.decoration == null) {
+				this.decoration = vscode.window.createTextEditorDecorationType({
+					borderWidth: '1px',
+					borderStyle: 'solid',
+					borderColor: this.color,
+					backgroundColor: this.color + '44', // add alpha
+					border: "1px",
+					//isWholeLine: true
+					overviewRulerLane: vscode.OverviewRulerLane.Right,
+					rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 
-		const range_start: vscode.Position = new vscode.Position(event.sel.startRow, event.sel.startCol); // -1?
-		const range_end: vscode.Position = new vscode.Position(event.sel.endRow, event.sel.endCol); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
-		const decorationRange = new vscode.Range(range_start, range_end);
-		if (editor !== undefined) {
-			editor.setDecorations(
-				this.decoration,
-				[{ range: decorationRange, hoverMessage: new vscode.MarkdownString(`### \`${event.user}\`'s cursor`) }]
-			);
+				});
+			}
+
+			const range_start: vscode.Position = new vscode.Position(sel.start.row, sel.start.col); // -1?
+			const range_end: vscode.Position = new vscode.Position(sel.finish.row, sel.finish.col); // -1? idk if this works it's kinda funny, should test with someone with a working version of codemp
+			const decorationRange = new vscode.Range(range_start, range_end);
+			if (editor !== undefined) {
+				editor.setDecorations(
+					this.decoration,
+					[{ range: decorationRange, hoverMessage: new vscode.MarkdownString(`### \`${this.name}\`'s cursor`) }]
+				);
+			}
 		}
 	}
 

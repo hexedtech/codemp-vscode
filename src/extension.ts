@@ -58,7 +58,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
 	if (client && workspaceState.workspace) {
-		await client.leaveWorkspace(workspaceState.workspace.id());
+		let wsid = workspaceState.workspace.id();
+		await client.leaveWorkspace(wsid.user, wsid.workspace);
 	}
 }
 

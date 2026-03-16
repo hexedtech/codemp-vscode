@@ -7,7 +7,7 @@ import { LOGGER, provider } from '../extension';
 
 // TODO this "global state" should probably live elsewher but we need lo update it from these commands
 export let client: codemp.Client | null = null;
-export let workspace_list: string[] = [];
+export let workspace_list: codemp.WorkspaceIdentifier[] = [];
 export let cursor_disposable: vscode.Disposable | null;
 
 export async function connect() {
@@ -27,7 +27,7 @@ export async function connect() {
 		client = await codemp.connect({
 			username: username,
 			password: password,
-			host: config.get<string>("server"),
+			host: config.get<string>("host"),
 			port: config.get<number>("port"),
 			tls: config.get<boolean>("tls"),
 		});
@@ -49,14 +49,19 @@ export async function join(selected: vscode.TreeItem | undefined) {
 			workspace_id = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		workspace_id = await vscode.window.showQuickPick(workspace_list, { placeHolder: "workspace to join:" }, undefined);
+		let ws_list = []
+		for (let ws of workspace_list) {
+			ws_list.push(`${ws.user}/${ws.workspace}`)
+		}
+		workspace_id = await vscode.window.showQuickPick(ws_list, { placeHolder: "workspace to join:" }, undefined);
 	}
 	if (!workspace_id) return;  // user cancelled with ESC
 	if (vscode.workspace.workspaceFolders === undefined) {
 		let ws = await vscode.window.showWorkspaceFolderPick({ placeHolder: "directory to open workspace into:" });
 		if (ws === undefined) return vscode.window.showErrorMessage("Open a Workspace folder first");
 	}
-	workspaceState.workspace = await client.attachWorkspace(workspace_id);
+	let split_wsid = workspace_id.split('/'); // TODO awful
+	workspaceState.workspace = await client.attachWorkspace(split_wsid[0], split_wsid[1]);
 	let controller = workspaceState.workspace.cursor();
 	controller.callback(cursor_callback);
 
@@ -71,22 +76,26 @@ export async function join(selected: vscode.TreeItem | undefined) {
 		if (buffer === undefined) {
 			if (once) {
 				controller.send({
-					startRow: 0,
-					startCol: 0,
-					endRow: 0,
-					endCol: 0,
 					buffer: "",
+					cursors: [
+						{
+							start: { row: 0, col: 0 },
+							finish: { row: 0, col: 0 },
+						}
+					]
 				});
 			}
 			once = false;
 		} else {
 
 			controller.send({
-				startRow: selection.anchor.line,
-				startCol: selection.anchor.character,
-				endRow: selection.active.line,
-				endCol: selection.active.character,
 				buffer: buffer,
+				cursors: [
+					{
+						start: { row: selection.anchor.line, col: selection.anchor.character },
+						finish: { row: selection.active.line, col: selection.active.character },
+					}
+				],
 			});
 			once = true;
 		}
@@ -102,7 +111,7 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
-async function workspace_callback(controller: codemp.Workspace) {
+async function workspace_callback(error: Error|null, controller: codemp.Workspace) {
 	while (true) {
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
@@ -111,25 +120,29 @@ async function workspace_callback(controller: codemp.Workspace) {
 		}
 		let event = await workspaceState.workspace.tryRecv();
 		if (event === null) break;
-		if (event.type == "leave") {
-			mapping.colors_cache.get(event.value)?.clear()
-			mapping.colors_cache.delete(event.value);
-		}
-		if (event.type == "join") {
-			mapping.colors_cache.set(event.value, new mapping.UserDecoration(event.value));
+		switch (event.kind) {
+			case codemp.WorkspaceEventKind.UserLeaveWorkspace:
+				mapping.colors_cache.get(event.user ?? "")?.clear()
+				mapping.colors_cache.delete(event.user ?? "");
+				break;
+			case codemp.WorkspaceEventKind.UserJoinWorkspace:
+				mapping.colors_cache.set(event.user ?? "", new mapping.UserDecoration(event.user ?? ""));
+				break;
+			default:
+				LOGGER.info(`incoming workspace event: ${JSON.stringify(event)}`);
 		}
 		provider.refresh();
 	}
 }
 
-async function cursor_callback(controller: codemp.CursorController) {
+async function cursor_callback(error: Error|null, controller: codemp.CursorController) {
 	while (true) {
-		let event = await controller.tryRecv();
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
 			LOGGER.info("left workspace, stopping cursor controller");
 			return;
 		}
+		let event = await controller.tryRecv();
 		if (event === null) break;
 		if (event.user === undefined) {
 			LOGGER.warn(`Skipping cursor event without user: ${event}`)
@@ -142,9 +155,9 @@ async function cursor_callback(controller: codemp.CursorController) {
 			provider.refresh();
 		}
 
-		let editor = mapping.bufferMapper.visible_by_buffer(event.sel.buffer);
-		let refresh = event.sel.buffer != mapp.buffer;
-		mapp.update(event, editor);
+		let editor = mapping.bufferMapper.visible_by_buffer(event.position.buffer);
+		let refresh = event.position.buffer != mapp.buffer;
+		mapp.update(event.position, editor);
 		if (workspaceState.follow === event.user) executeJump(event.user);
 		if (refresh) provider.refresh();
 	}
@@ -172,7 +185,11 @@ export async function createWorkspace() {
 
 export async function inviteToWorkspace() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let workspace_id = await vscode.window.showQuickPick(workspace_list, { placeHolder: "workspace to invite to:" });
+	let ws_list = []
+	for (let ws of workspace_list) {
+		ws_list.push(`${ws.user}/${ws.workspace}`)
+	}
+	let workspace_id = await vscode.window.showQuickPick(ws_list, { placeHolder: "workspace to invite to:" });
 	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Name of user to invite" });
 	if (user_id === undefined) return;
@@ -183,8 +200,9 @@ export async function inviteToWorkspace() {
 export async function leave() {
 	if (!client) throw "can't leave while disconnected";
 	if (!workspaceState.workspace) throw "can't leave while not in a workspace";
-	workspaceState.workspace.cursor().clearCallback()
-	client.leaveWorkspace(workspaceState.workspace.id());
+	workspaceState.workspace.cursor().clearCallback();
+	let wsid = workspaceState.workspace.id();
+	client.leaveWorkspace(wsid.user, wsid.workspace);
 	if (cursor_disposable !== null) cursor_disposable.dispose();
 	let workspace_id = workspaceState.workspace.id();
 	workspaceState.workspace = null;
