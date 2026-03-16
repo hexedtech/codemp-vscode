@@ -130,6 +130,12 @@
         "icon": "$(arrow-up)"
       },
       {
+        "command": "codemp.acceptInvite",
+        "title": "Accept Workspace Invite",
+        "category": "codemp",
+        "icon": "$(arrow-up)"
+      },
+      {
         "command": "codemp.listWorkspaces",
         "title": "List Workspaces",
         "category": "codemp",

@@ -197,6 +197,15 @@ export async function inviteToWorkspace() {
 	vscode.window.showInformationMessage("Invited " + user_id + " into workspace " + workspace_id);
 }
 
+export async function acceptInvite() {
+	if (client === null) return vscode.window.showWarningMessage("Connect first");
+	let user_id = await vscode.window.showInputBox({ prompt: "Workspace owner" });
+	let ws_id = await vscode.window.showInputBox({ prompt: "Workspace name" });
+	if (user_id !== undefined && ws_id !== undefined) {
+		await client.acceptInvite(user_id, ws_id);
+	}
+}
+
 export async function leave() {
 	if (!client) throw "can't leave while disconnected";
 	if (!workspaceState.workspace) throw "can't leave while not in a workspace";
