@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
-import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave, deleteWorkspace, version } from './commands/client';
+import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave, deleteWorkspace, version, acceptInvite } from './commands/client';
 import { CodempTreeProvider } from './tree';
 import * as mapping from './mapping';
 import { workspaceState, jump, listBuffers, createBuffer, deleteBuffer } from './commands/workspaces'
@@ -40,6 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('codemp.share', share),
 		vscode.commands.registerCommand('codemp.createWorkspace', createWorkspace),
 		vscode.commands.registerCommand('codemp.inviteWorkspace', inviteToWorkspace),
+		vscode.commands.registerCommand('codemp.acceptInvite', acceptInvite),
 		vscode.commands.registerCommand('codemp.listWorkspaces', listWorkspaces),
 		vscode.commands.registerCommand('codemp.leave', leave),
 		vscode.commands.registerCommand('codemp.deleteWorkspace', deleteWorkspace),
