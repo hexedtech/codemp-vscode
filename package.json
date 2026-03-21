@@ -96,6 +96,11 @@
           "group": "inline"
         },
         {
+          "command": "codemp.detach",
+          "when": "view == codemp-tree-view && viewItem == buffer_active",
+          "group": "inline"
+        },
+        {
           "command": "codemp.jump",
           "when": "view == codemp-tree-view && viewItem == user",
           "group": "inline"
@@ -179,19 +184,19 @@
         "command": "codemp.detach",
         "title": "Detach from Buffer",
         "category": "codemp",
-        "icon": "$(arrow-down)"
+        "icon": "$(watch-expressions-remove-all)"
       },
       {
         "command": "codemp.deleteBuffer",
         "title": "Delete Buffer",
         "category": "codemp",
-        "icon": "$(arrow-down)"
+        "icon": "$(terminal-kill)"
       },
       {
         "command": "codemp.pinUnpinBuffer",
         "title": "Pin/Unpin Buffer",
         "category": "codemp",
-        "icon": "$(arrow-down)"
+        "icon": "$(timeline-pin)"
       },
       {
         "command": "codemp.sync",

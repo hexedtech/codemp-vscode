@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
+import * as utils from "../utils";
 import { workspaceState } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
@@ -40,9 +41,10 @@ export async function apply_changes_to_buffer(path: string, controller: codemp.B
 					const selection = await vscode.window.showWarningMessage('Out of Sync', 'Resync');
 					if (selection !== undefined && workspaceState.workspace) {
 						await resync(path, workspaceState.workspace, editor, 20);
-						controller.callback(async (err: Error|null, controller: codemp.BufferController) =>
+						controller.callback(async (err: Error|null, controller: codemp.BufferController) => {
+							if (err !== null) LOGGER.error(err);
 							await apply_changes_to_buffer(controller.path(), controller)
-						);
+						});
 					}
 				}
 			}
@@ -139,9 +141,10 @@ export async function attach_to_remote_buffer(buffer_name: string, set_content?:
 		}
 	});
 
-	buffer.callback(async (error: Error|null, controller: codemp.BufferController) =>
+	buffer.callback(async (error: Error|null, controller: codemp.BufferController) => {
+		if (error !== null) LOGGER.error(error);
 		await apply_changes_to_buffer(controller.path(), controller)
-	);
+	});
 
 	mapping.bufferMapper.register(buffer.path(), file_uri, disposable);
 
@@ -170,17 +173,12 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 
 export async function detach(selected: vscode.TreeItem | undefined) {
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Not in a workspace");
-	let buffer_name: string | undefined;
-	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof (selected.label) === 'string') {
-			buffer_name = selected.label;
-		} else {
-			buffer_name = selected.label.label; // TODO ughh what is this api?
-		}
-	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.activeBuffers(), { placeHolder: "buffer to detach from:" }, undefined);
-	}
-	if (!buffer_name) return;
+	let buffer_name = await utils.getOrPick(
+		selected,
+		workspaceState.workspace.activeBuffers(),
+		{ title: "codemp.detach", prompt: "buffer to detach from" },
+	);
+	if (buffer_name === null) return;
 	let controller = workspaceState.workspace.getBuffer(buffer_name);
 	if (controller) controller.clearCallback();
 	workspaceState.workspace.detachBuffer(buffer_name);

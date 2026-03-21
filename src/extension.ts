@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
+import * as mapping from './mapping';
 import { client, connect, join, refresh, createWorkspace, inviteToWorkspace, listWorkspaces, leave, deleteWorkspace, version, acceptInvite } from './commands/client';
 import { CodempTreeProvider } from './tree';
-import * as mapping from './mapping';
 import { workspaceState, jump, listBuffers, createBuffer, deleteBuffer, pinUnpinBuffer } from './commands/workspaces'
 import { attach, share, sync, apply_changes_to_buffer, detach } from './commands/buffers'
 

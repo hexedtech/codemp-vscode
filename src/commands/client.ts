@@ -112,7 +112,8 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
-async function workspace_callback(_error: Error|null, controller: codemp.Workspace) {
+async function workspace_callback(error: Error|null, controller: codemp.Workspace) {
+	if (error !== null) LOGGER.error(error);
 	while (true) {
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
@@ -141,7 +142,8 @@ async function workspace_callback(_error: Error|null, controller: codemp.Workspa
 	provider.refresh();
 }
 
-async function cursor_callback(_error: Error|null, controller: codemp.CursorController) {
+async function cursor_callback(error: Error|null, controller: codemp.CursorController) {
+	if (error !== null) LOGGER.error(error);
 	while (true) {
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
