@@ -158,7 +158,11 @@ export async function attach(selected: vscode.TreeItem | undefined) {
 			buffer_name = selected.label.label; // TODO ughh what is this api?
 		}
 	} else {
-		buffer_name = await vscode.window.showQuickPick(workspaceState.workspace.searchBuffers(), { placeHolder: "buffer to attach to:" }, undefined);
+		let bufs = []
+		for (let b of workspaceState.workspace.searchBuffers()) {
+			bufs.push(b.path.path);
+		}
+		buffer_name = await vscode.window.showQuickPick(bufs, { placeHolder: "buffer to attach to:" }, undefined);
 	}
 	if (!buffer_name) return;
 	await attach_to_remote_buffer(buffer_name);
@@ -199,7 +203,7 @@ export async function share() {
 	let workspacePath: string = vscode.workspace.workspaceFolders[0].uri.toString();
 	buffer_name = buffer_name.replace(workspacePath, "").substring(1); //vscode.workspace.asRelativePath doesn't work properly with other extensions like ssh, substring(1) to remove "/"
 	console.log("After: " + buffer_name);
-	await workspaceState.workspace.createBuffer(buffer_name, false);
+	await workspaceState.workspace.createBuffer(buffer_name, { ephemeral: false });
 	await attach_to_remote_buffer(buffer_name, true);
 }
 

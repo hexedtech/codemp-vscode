@@ -24,7 +24,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.CurrentWorkspace:
 					if (workspaceState.workspace === null) return []; // TODO ???? error maybe ???
 					let items = workspaceState.workspace.searchBuffers().map((x) =>
-						new CodempTreeItem(x, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x) })
+						new CodempTreeItem(x.path.path, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x.path.path) })
 					);
 					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }));
 					items.push(new CodempTreeItem("Users", Type.UserContainer, { expandable: true }));

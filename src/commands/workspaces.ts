@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
-import { client } from "./client"
+import * as utils from "../utils";
 import { provider } from '../extension';
 
 
@@ -17,17 +17,13 @@ export let workspaceState: {
 
 
 export async function jump(selected: vscode.TreeItem | undefined) {
-	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let user;
-	if (selected !== undefined && selected.label !== undefined) {
-		if (typeof (selected.label) === 'string') {
-			user = selected.label;
-		} else {
-			user = selected.label.label;
-		}
-	}
-	if (!user) user = await vscode.window.showInputBox({ prompt: "username" });
-	if (!user) return;  // user cancelled with ESC
+	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	let user = await utils.getOrPick(
+		selected,
+		workspaceState.workspace.userList().map((u) => u.name),
+		{ title: "codemp.jump", prompt: "user to jump to" },
+	);
+	if (user === null) return; // user exited picker
 	workspaceState.follow = user;
 	executeJump(user);
 }
@@ -53,7 +49,7 @@ export async function executeJump(user: string) {
 export async function createBuffer() {
 	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to create" }));
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
-	await workspaceState.workspace.createBuffer(bufferName, false);
+	await workspaceState.workspace.createBuffer(bufferName, { ephemeral: false });
 	vscode.window.showInformationMessage(`new buffer created :${bufferName}`);
 	provider.refresh();
 }
@@ -65,10 +61,36 @@ export async function listBuffers() {
 	provider.refresh();
 }
 
-export async function deleteBuffer() {
-	let bufferName: any = (await vscode.window.showInputBox({ prompt: "path of the buffer to delete" }));
+export async function deleteBuffer(selected: vscode.TreeItem | undefined) {
 	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	let bufferName = await utils.getOrPick(
+		selected,
+		workspaceState.workspace.searchBuffers().map((b) => b.path.path),
+		{ prompt: "buffer to delete:", title: "codemp.deleteBuffer" },
+	);
+	if (bufferName === null) return; // user exited picker
 	await workspaceState.workspace.deleteBuffer(bufferName);
 	vscode.window.showInformationMessage(`Deleted buffer :${bufferName}`);
+	provider.refresh();
+}
+
+export async function pinUnpinBuffer(selected: vscode.TreeItem | undefined) {
+	if (workspaceState.workspace === null) return vscode.window.showWarningMessage("Join a workspace first");
+	let bufferName = await utils.getOrPick(
+		selected,
+		workspaceState.workspace.searchBuffers().map((b) => b.path.path),
+		{ prompt: "buffer to delete:", title: "codemp.deleteBuffer" },
+	);
+	if (bufferName === null) return; // user exited picker
+
+	let node = workspaceState.workspace.searchBuffers(bufferName)[0];
+	if (node.attributes.ephemeral) {
+		await workspaceState.workspace.pinBuffer(bufferName);
+		vscode.window.showInformationMessage(`Pinned buffer: ${bufferName}`);
+	} else {
+		await workspaceState.workspace.unpinBuffer(bufferName);
+		vscode.window.showInformationMessage(`Un-Pinned buffer: ${bufferName}`);
+	}
+
 	provider.refresh();
 }

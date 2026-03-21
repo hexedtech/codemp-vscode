@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as codemp from 'codemp';
 import * as mapping from "../mapping";
+import * as utils from "../utils";
 import { executeJump, workspaceState } from "./workspaces";
 import { LOGGER, provider } from '../extension';
 
@@ -111,12 +112,12 @@ export async function join(selected: vscode.TreeItem | undefined) {
 	provider.refresh();
 }
 
-async function workspace_callback(error: Error|null, controller: codemp.Workspace) {
+async function workspace_callback(_error: Error|null, controller: codemp.Workspace) {
 	while (true) {
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
 			LOGGER.info("left workspace, stopping receiving events");
-			return;
+			break;
 		}
 		let event = await workspaceState.workspace.tryRecv();
 		if (event === null) break;
@@ -128,14 +129,19 @@ async function workspace_callback(error: Error|null, controller: codemp.Workspac
 			case codemp.WorkspaceEventKind.UserJoinWorkspace:
 				mapping.colors_cache.set(event.user ?? "", new mapping.UserDecoration(event.user ?? ""));
 				break;
+			case codemp.WorkspaceEventKind.BufferCreate:
+			case codemp.WorkspaceEventKind.BufferDelete:
+			case codemp.WorkspaceEventKind.BufferRename:
+			case codemp.WorkspaceEventKind.BufferAttrsUpdated:
+				break;
 			default:
 				LOGGER.info(`incoming workspace event: ${JSON.stringify(event)}`);
 		}
-		provider.refresh();
 	}
+	provider.refresh();
 }
 
-async function cursor_callback(error: Error|null, controller: codemp.CursorController) {
+async function cursor_callback(_error: Error|null, controller: codemp.CursorController) {
 	while (true) {
 		if (workspaceState.workspace === null) {
 			controller.clearCallback();
@@ -185,10 +191,7 @@ export async function createWorkspace() {
 
 export async function inviteToWorkspace() {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let ws_list = []
-	for (let ws of workspace_list) {
-		ws_list.push(`${ws.user}/${ws.workspace}`)
-	}
+	let ws_list = workspace_list.filter((w) => w.user === client?.currentUser().name).map((w) => w.workspace);
 	let workspace_id = await vscode.window.showQuickPick(ws_list, { placeHolder: "workspace to invite to:" });
 	if (workspace_id === undefined) return;
 	let user_id = await vscode.window.showInputBox({ prompt: "Name of user to invite" });
@@ -219,12 +222,16 @@ export async function leave() {
 	vscode.window.showInformationMessage("Left workspace " + workspace_id);
 }
 
-export async function deleteWorkspace() {
+export async function deleteWorkspace(selected: vscode.TreeItem | undefined) {
 	if (client === null) return vscode.window.showWarningMessage("Connect first");
-	let workspace_id = await vscode.window.showInputBox({ prompt: "Enter workspace's name to delete" });
-	if (workspace_id === undefined) return;
-	await client.deleteWorkspace(workspace_id);
-	vscode.window.showInformationMessage("Deleted workspace " + workspace_id);
+	let workspace = await utils.getOrPick(
+		selected,
+		workspace_list.filter((w) => w.user === client?.currentUser().name).map((w) => w.workspace),
+		{ title: "codemp.deleteWorkspace", prompt: "workspace to delete" },
+	);
+	if (workspace === null) return;
+	await client.deleteWorkspace(workspace);
+	vscode.window.showInformationMessage("Deleted workspace " + workspace);
 	listWorkspaces();
 }
 

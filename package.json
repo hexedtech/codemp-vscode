@@ -81,6 +81,16 @@
           "group": "inline"
         },
         {
+          "command": "codemp.deleteBuffer",
+          "when": "view == codemp-tree-view && viewItem == buffer",
+          "group": "inline"
+        },
+        {
+          "command": "codemp.pinUnpin",
+          "when": "view == codemp-tree-view && viewItem == buffer",
+          "group": "inline"
+        },
+        {
           "command": "codemp.sync",
           "when": "view == codemp-tree-view && viewItem == buffer_active",
           "group": "inline"
@@ -178,6 +188,12 @@
         "icon": "$(arrow-down)"
       },
       {
+        "command": "codemp.pinUnpinBuffer",
+        "title": "Pin/Unpin Buffer",
+        "category": "codemp",
+        "icon": "$(arrow-down)"
+      },
+      {
         "command": "codemp.sync",
         "title": "Sync",
         "category": "codemp",
@@ -261,7 +277,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "codemp": "file:/path/to/your/codemp/lib/dist/js",
+    "codemp": "file:/home/alemi/source/work/codemp/lib/dist/js/",
     "yarn": "^1.22.22"
   }
 }
