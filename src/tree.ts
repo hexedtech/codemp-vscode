@@ -24,7 +24,11 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.CurrentWorkspace:
 					if (workspaceState.workspace === null) return []; // TODO ???? error maybe ???
 					let items = workspaceState.workspace.searchBuffers().map((x) =>
-						new CodempTreeItem(x.path.path, Type.Buffer, { active: bufferMapper.bufferToEditorMapping.has(x.path.path) })
+						new CodempTreeItem(
+							x.path.path,
+							x.attributes.ephemeral ? Type.EphemeralBuffer : Type.Buffer,
+							{ active: bufferMapper.bufferToEditorMapping.has(x.path.path) }
+						)
 					);
 					items.push(new CodempTreeItem("", Type.Placeholder, { expandable: false }));
 					items.push(new CodempTreeItem("Users", Type.UserContainer, { expandable: true }));
@@ -57,6 +61,7 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.Placeholder:
 				case Type.User:
 				case Type.Buffer:
+				case Type.EphemeralBuffer:
 				case Type.Workspace:
 				case Type.ClientInfo:
 				// default:
@@ -98,8 +103,9 @@ class CodempTreeItem extends vscode.TreeItem {
 		else if (type === Type.UserContainer) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");
 		else if (type === Type.ClientContainer) this.iconPath = new vscode.ThemeIcon("broadcast");
 		else if (type === Type.ClientInfo) this.iconPath = new vscode.ThemeIcon("chip");
-		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data");
+		else if (type === Type.CurrentWorkspace) this.iconPath = new vscode.ThemeIcon("notebook-render-output");
 		else if (type === Type.Workspace) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-data-unverified");
+		else if (type === Type.EphemeralBuffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-breakpoint-function" : "debug-breakpoint-function-unverified");
 		else if (type === Type.Buffer) this.iconPath = new vscode.ThemeIcon(opts.active ? "debug-breakpoint-log" : "debug-breakpoint-log-unverified");
 		else if (type === Type.User) this.iconPath = new vscode.ThemeIcon("debug-breakpoint-disabled");
 	}
@@ -113,6 +119,7 @@ enum Type {
 	CurrentWorkspace = "current_workspace",
 	Workspace = "workspace",
 	Buffer = "buffer",
+	EphemeralBuffer = "ephemeral_buffer",
 	User = "user",
 	Placeholder = "placeholder",
 }

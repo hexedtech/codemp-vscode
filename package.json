@@ -82,27 +82,27 @@
         },
         {
           "command": "codemp.deleteBuffer",
-          "when": "view == codemp-tree-view && viewItem == buffer",
+          "when": "view == codemp-tree-view && (viewItem == buffer || viewItem == ephemeral_buffer)",
           "group": "inline"
         },
         {
           "command": "codemp.pinUnpinBuffer",
-          "when": "view == codemp-tree-view && viewItem == buffer",
+          "when": "view == codemp-tree-view && (viewItem == buffer || viewItem == ephemeral_buffer)",
           "group": "inline"
         },
         {
           "command": "codemp.attach",
-          "when": "view == codemp-tree-view && viewItem == buffer",
+          "when": "view == codemp-tree-view && (viewItem == buffer || viewItem == ephemeral_buffer)",
           "group": "inline"
         },
         {
           "command": "codemp.sync",
-          "when": "view == codemp-tree-view && viewItem == buffer_active",
+          "when": "view == codemp-tree-view && (viewItem == buffer_active || viewItem == ephemeral_buffer_active)",
           "group": "inline"
         },
         {
           "command": "codemp.detach",
-          "when": "view == codemp-tree-view && viewItem == buffer_active",
+          "when": "view == codemp-tree-view && (viewItem == buffer_active || viewItem == ephemeral_buffer_active)",
           "group": "inline"
         },
         {
