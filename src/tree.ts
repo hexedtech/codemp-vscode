@@ -49,12 +49,9 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 				case Type.ClientContainer:
 					let info = [];
 					if (client === null) return [];
-					info.push(new CodempTreeItem("username", Type.ClientInfo, { description: client.currentUser().name }));
-					info.push(Object.assign(new CodempTreeItem("uuid", Type.ClientInfo, {}), {
-						description: client.currentUser().name,
-						tooltip: `display name: ${client.currentUser().displayName ?? ""}`
-
-					}));
+					info.push(new CodempTreeItem("id", Type.ClientInfo, { description: client.currentUser().name }));
+					info.push(new CodempTreeItem("name", Type.ClientInfo, { description: client.currentUser().displayName || "" }));
+					info.push(new CodempTreeItem("bio", Type.ClientInfo, { description: client.currentUser().description || "" }));
 					return info;
 
 				case Type.Placeholder:
@@ -89,12 +86,13 @@ export class CodempTreeProvider implements vscode.TreeDataProvider<CodempTreeIte
 
 class CodempTreeItem extends vscode.TreeItem {
 	type: Type;
-	constructor(label: string | vscode.TreeItemLabel, type: Type, opts: { description?: string, expandable?: boolean, active?: boolean }) {
+	constructor(label: string | vscode.TreeItemLabel, type: Type, opts: { description?: string, expandable?: boolean, active?: boolean, tooltip?: string }) {
 		let state = opts.expandable ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None;
 		super(label, state);
 		this.type = type;
 		this.contextValue = type;
 		this.description = opts.description || "";
+		this.tooltip = opts.tooltip || "";
 		if (opts.active) this.contextValue += "_active";
 		if (type === Type.WorkspaceContainer) this.iconPath = new vscode.ThemeIcon("extensions-remote");
 		else if (type === Type.UserContainer) this.iconPath = new vscode.ThemeIcon("accounts-view-bar-icon");

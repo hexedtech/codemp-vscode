@@ -76,8 +76,8 @@
           "group": "inline"
         },
         {
-          "command": "codemp.attach",
-          "when": "view == codemp-tree-view && viewItem == buffer",
+          "command": "codemp.createBuffer",
+          "when": "view == codemp-tree-view && viewItem == current_workspace",
           "group": "inline"
         },
         {
@@ -86,7 +86,12 @@
           "group": "inline"
         },
         {
-          "command": "codemp.pinUnpin",
+          "command": "codemp.pinUnpinBuffer",
+          "when": "view == codemp-tree-view && viewItem == buffer",
+          "group": "inline"
+        },
+        {
+          "command": "codemp.attach",
           "when": "view == codemp-tree-view && viewItem == buffer",
           "group": "inline"
         },
